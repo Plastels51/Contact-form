@@ -1,0 +1,674 @@
+/* Contact Form Submissions — front-end styles.
+ * Rules:
+ *  - Mobile-first: base styles target small screens, media queries add width.
+ *  - All classes prefixed with cfs-.
+ *  - No !important anywhere.
+ *  - Floating label pattern: label is absolutely positioned inside the input,
+ *    floats to the top when .cfs-field has class "focused" (JS-managed).
+ */
+
+/* ─────────────────────────────────────────────────────────────
+   WRAPPER
+   ───────────────────────────────────────────────────────────── */
+.cfs-form-wrap {
+	position: relative;
+	width: 100%;
+	max-width: 560px;
+	margin-left: auto;
+	margin-right: auto;
+	box-sizing: border-box;
+}
+
+.cfs-form-title {
+	margin-top: 0;
+	margin-bottom: 1rem;
+	font-size: 1.25em;
+	line-height: 1.3;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HONEYPOT
+   ───────────────────────────────────────────────────────────── */
+.cfs-hp {
+	position: absolute;
+	left: -9999px;
+	top: -9999px;
+	opacity: 0;
+	height: 0;
+	overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FORM-LEVEL MESSAGE  (success / error banner)
+   ───────────────────────────────────────────────────────────── */
+.cfs-form-message {
+	padding: 0.75rem 1rem;
+	border-radius: 4px;
+	margin-bottom: 1rem;
+	font-size: 0.95em;
+	line-height: 1.5;
+	border-width: 1px;
+	border-style: solid;
+	outline: none;
+}
+
+.cfs-form-message--success {
+	background-color: #ecf9ee;
+	border-color: #4caf50;
+	color: #1e5e22;
+}
+
+.cfs-form-message--error {
+	background-color: #fdf3f3;
+	border-color: #e53e3e;
+	color: #7b1c1c;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FIELD WRAPPER
+   Padding-top creates the "shelf" above the input where the
+   floated label lands. Its height equals the space we reserve.
+   ───────────────────────────────────────────────────────────── */
+.cfs-field {
+	position: relative;
+	/*
+	 * 1.5rem = shelf height.
+	 * Floated label center will align to this value (= input top border).
+	 */
+	padding-top: 1.5rem;
+	margin-bottom: 1.25rem;
+}
+
+.cfs-field:last-child {
+	margin-bottom: 0;
+}
+
+/* Checkbox, select, submit, text and radio do not need the floating-label shelf. */
+.cfs-field--checkbox,
+.cfs-field--select,
+.cfs-field--submit,
+.cfs-field--text,
+.cfs-field--radio {
+	padding-top: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FLOATING LABEL  (input / email / tel / textarea / select)
+
+   Geometry:
+     wrapper padding-top = 1.5rem  → top of input border
+     label floated font-size       = 0.75em → height ≈ 0.75rem
+     label half-height             = 0.375rem
+     floated top = 1.5rem − 0.375rem = 1.125rem
+       → label center sits exactly on the input top border
+
+   Resting (placeholder-like position):
+     top = wrapper-pt(1.5) + input-border(≈0) + input-pt(0.625) + optical(0.15)
+         ≈ 2.275rem  →  use 2.2rem for a clean value
+   ───────────────────────────────────────────────────────────── */
+.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	position: absolute;
+
+	/* Resting: visually inside the input, like a placeholder. */
+	top: 2.2rem;
+	left: 0.75rem;
+
+	font-size: 1em;
+	font-weight: 400;
+	line-height: 1;
+	color: #999;
+
+	pointer-events: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: calc(100% - 1.5rem);
+
+	/* No background at rest — transparent so input shows through. */
+	background-color: transparent;
+	padding: 0;
+
+	z-index: 2;
+
+	transition:
+		top             0.18s ease,
+		left            0.18s ease,
+		font-size       0.18s ease,
+		font-weight     0.18s ease,
+		color           0.18s ease,
+		padding         0.18s ease,
+		background-color 0.01s 0.09s linear; /* background snaps mid-transition */
+}
+
+/* Required asterisk inherits the label's color (gray at rest, blue/red when floated). */
+.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label .cfs-required {
+	color: inherit;
+}
+
+/* ── Floated state: focused OR has a value ── */
+.cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	/* Center on the input top border: 1.5rem − 0.375rem = 1.125rem. */
+	top: 1.125rem;
+	left: calc(0.75rem - 0.2rem); /* compensate for added padding */
+
+	font-size: 0.75em;
+	font-weight: 600;
+	color: #0073aa;
+
+	/* White strip cuts through the input border line. */
+	background-color: #fff;
+	padding: 0 0.2rem;
+}
+
+/* Error colour on the floated label. */
+.cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	color: #c0392b;
+}
+
+/*
+ * Hide the native placeholder: the floating label replaces it.
+ * We only need the placeholder attribute for the phone field focus-seed via JS.
+ */
+.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > .cfs-input::placeholder {
+	color: transparent;
+	transition: color 0.1s;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CHECKBOX LABEL  (stays in normal flow — not floating)
+   ───────────────────────────────────────────────────────────── */
+.cfs-field--checkbox .cfs-checkbox-label {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	font-size: 0.9em;
+	font-weight: normal;
+	line-height: 1.4;
+	cursor: pointer;
+}
+
+.cfs-checkbox {
+	width: auto;
+	flex-shrink: 0;
+	margin-top: 0.2em;
+	accent-color: #0073aa;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INPUTS  (text, email, tel, select, textarea)
+   ───────────────────────────────────────────────────────────── */
+.cfs-input {
+	display: block;
+	width: 100%;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	font-size: 1em;
+	line-height: 1.4;
+	color: #222;
+	background-color: #fff;
+	box-sizing: border-box;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cfs-input:focus {
+	outline: none;
+	border-color: #0073aa;
+	box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.18);
+}
+
+.cfs-input:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 1px;
+	box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INVALID STATE  (CSS class + ARIA attribute both work)
+   ───────────────────────────────────────────────────────────── */
+.cfs-input--error,
+.cfs-input[aria-invalid="true"] {
+	border-color: #e53e3e;
+	box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.15);
+}
+
+.cfs-input--error:focus,
+.cfs-input[aria-invalid="true"]:focus {
+	border-color: #c0392b;
+	box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.22);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TEXTAREA
+   ───────────────────────────────────────────────────────────── */
+.cfs-textarea {
+	resize: vertical;
+	min-height: 5.5rem;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SELECT
+   ───────────────────────────────────────────────────────────── */
+.cfs-select {
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 0.75rem center;
+	padding-right: 2.25rem;
+	cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ERROR SPAN  (per-field, below the input)
+   ───────────────────────────────────────────────────────────── */
+.cfs-error {
+	display: block;
+	color: #c0392b;
+	font-size: 0.82em;
+	margin-top: 0.25rem;
+	min-height: 1.1em;
+	line-height: 1.3;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SUBMIT BUTTON
+   ───────────────────────────────────────────────────────────── */
+.cfs-field--submit {
+	margin-top: 0.5rem;
+}
+
+.cfs-btn--submit {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.688rem 1.75rem;
+	background-color: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-size: 1em;
+	font-weight: 600;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: background-color 0.15s ease, opacity 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-btn--submit:hover {
+	background-color: #005c8a;
+}
+
+.cfs-btn--submit:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 2px;
+	background-color: #005c8a;
+}
+
+/* Loading / disabled state. */
+.cfs-btn--submit:disabled,
+.cfs-btn--submit[aria-busy="true"] {
+	opacity: 0.62;
+	cursor: not-allowed;
+	background-color: #0073aa;
+}
+
+/* Animated ellipsis while aria-busy. */
+.cfs-btn--submit[aria-busy="true"]::after {
+	content: '';
+	display: inline-block;
+	width: 0.9em;
+	overflow: hidden;
+	vertical-align: bottom;
+	animation: cfs-ellipsis 1.2s steps(4, end) infinite;
+}
+
+@keyframes cfs-ellipsis {
+	0%   { width: 0; }
+	25%  { width: 0.3em; }
+	50%  { width: 0.6em; }
+	75%  { width: 0.9em; }
+	100% { width: 0; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ADMIN STATUS BADGES
+   ───────────────────────────────────────────────────────────── */
+.cfs-status {
+	display: inline-block;
+	padding: 0.15rem 0.5rem;
+	border-radius: 3px;
+	font-size: 0.82em;
+	font-weight: 600;
+}
+
+.cfs-status--new       { background-color: #e8f4fd; color: #005177; }
+.cfs-status--processed { background-color: #ecf9ee; color: #1e6129; }
+.cfs-status--spam      { background-color: #fff3cd; color: #7a5800; }
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ───────────────────────────────────────────────────────────── */
+@media (min-width: 480px) {
+	.cfs-form-wrap {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	/* Optional two-column layout: add class="cfs-form--cols-2" to the form. */
+	.cfs-form--cols-2 .cfs-field {
+		display: inline-block;
+		width: calc(50% - 0.5rem);
+		vertical-align: top;
+	}
+
+	.cfs-form--cols-2 .cfs-field:nth-child(odd) {
+		margin-right: 1rem;
+	}
+
+	.cfs-form--cols-2 .cfs-field--submit,
+	.cfs-form--cols-2 .cfs-field--comment,
+	.cfs-form--cols-2 .cfs-field--checkbox {
+		width: 100%;
+		display: block;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL TRIGGER BUTTON  (.cfs-modal-btn)
+   Rendered in page flow; opens the <dialog> on click.
+   Styled identically to .cfs-btn--submit for visual consistency,
+   but lives outside the form wrapper.
+   ───────────────────────────────────────────────────────────── */
+.cfs-modal-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.688rem 1.75rem;
+	background-color: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-size: 1em;
+	font-weight: 600;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-modal-btn:hover {
+	background-color: #005c8a;
+}
+
+.cfs-modal-btn:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 2px;
+	background-color: #005c8a;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DIALOG WRAPPER  (dialog.cfs-form-wrap--dialog)
+   When container="dialog" the shortcode renders a native <dialog>
+   element. The ::backdrop pseudo-element provides the overlay.
+   ───────────────────────────────────────────────────────────── */
+dialog.cfs-form-wrap--dialog {
+	/* Override browser default centering so we can use our own transform. */
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	margin: 0;
+
+	/* Sizing — never exceed viewport. */
+	max-width: min(560px, 90vw);
+	width: 100%;
+	max-height: 90vh;
+	overflow-y: auto;
+
+	/* Appearance. */
+	padding: 2rem 1.5rem 1.5rem;
+	border: none;
+	border-radius: 8px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+	box-sizing: border-box;
+	background-color: #fff;
+}
+
+dialog.cfs-form-wrap--dialog::backdrop {
+	background-color: rgba(0, 0, 0, 0.55);
+}
+
+/* Close (×) button inside the dialog. */
+.cfs-modal-close {
+	position: absolute;
+	top: 0.625rem;
+	right: 0.625rem;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	font-size: 1.1em;
+	line-height: 1;
+	color: #888;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.cfs-modal-close:hover {
+	color: #222;
+	border-color: #ccc;
+}
+
+.cfs-modal-close:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 1px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   AGREEMENT FIELD
+   Behaves like a checkbox field; inherits all .cfs-field--checkbox
+   rules. The extra class .cfs-field--agreement allows theme
+   overrides without touching the generic checkbox styling.
+   ───────────────────────────────────────────────────────────── */
+.cfs-field--agreement .cfs-checkbox-label a {
+	color: #0073aa;
+	text-decoration: underline;
+}
+
+.cfs-field--agreement .cfs-checkbox-label a:hover {
+	color: #005c8a;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FIELD ICONS  (.cfs-field--has-icon > svg)
+
+   Bare SVG rendered immediately after the <input> / <textarea> /
+   <select> inside .cfs-field. Styled via parent selector — no
+   wrapper span needed.
+
+   Geometry for fields WITH the floating-label shelf (padding-top: 1.5rem):
+     Icon center = shelf (1.5rem) + border (1px) + input-padding-top (0.625rem)
+                   + half line-height (~0.7rem) ≈ 2.825rem
+   Select and other shelf-less fields use top: 50% instead.
+   ───────────────────────────────────────────────────────────── */
+
+/* Icon SVG — positioned inside .cfs-field (position:relative). */
+.cfs-field--has-icon > svg {
+	position: absolute;
+	left: 0.75rem;
+	top: 2.825rem;
+	transform: translateY(-50%);
+
+	width: 1.1rem;
+	height: 1.1rem;
+	color: #aaa;
+	pointer-events: none;
+	z-index: 3;
+	transition: color 0.15s ease;
+}
+
+/* Select has no shelf → centre icon vertically in the select element itself. */
+.cfs-field--select.cfs-field--has-icon > svg {
+	top: 50%;
+}
+
+/* Textarea (comment): align icon with the top of the text area content, not centred. */
+.cfs-field--comment.cfs-field--has-icon > svg {
+	top: calc(1.5rem + 0.75rem); /* shelf + input-border + padding-top */
+	transform: translateY(0);
+}
+
+/* Input/textarea/select gets extra left padding to not overlap the icon. */
+.cfs-field--has-icon .cfs-input {
+	padding-left: 2.5rem;
+}
+
+/*
+ * Floating label — resting state.
+ * When icon is present the label starts to the RIGHT of the icon so it
+ * acts as a placeholder aligned with the text inside the input.
+ */
+.cfs-field--has-icon:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.focused) > label {
+	left: 2.5rem;
+	max-width: calc(100% - 3rem);
+}
+
+/*
+ * Floating label — floated (focused or has value) state.
+ * The label escapes the input and floats above the border, so it goes back
+ * to the original horizontal position regardless of icon.
+ */
+.cfs-field--has-icon.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	left: calc(0.75rem - 0.2rem);
+	max-width: calc(100% - 1.5rem);
+}
+
+/* Icon turns accent colour when the field is active / focused. */
+.cfs-field--has-icon .cfs-input:focus ~ svg,
+.cfs-field--has-icon.focused > svg {
+	color: #0073aa;
+}
+
+/* Icon turns error colour when the field is invalid. */
+.cfs-field--has-icon.cfs-field--has-error > svg {
+	color: #c0392b;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BUTTON ICONS  (.cfs-btn--submit > svg, .cfs-modal-btn > svg)
+
+   Bare SVG icons rendered inside .cfs-btn--submit and
+   .cfs-modal-btn. The buttons use display:inline-flex + gap so
+   the icon and label text align automatically.
+
+   Usage in shortcode:
+     button_icon_before="phone"    ← icon left of submit text
+     button_icon_after="arrow"     ← icon right of submit text
+     modal_button_icon_before="phone"
+     modal_button_icon_after="arrow"
+   ───────────────────────────────────────────────────────────── */
+.cfs-btn--submit > svg,
+.cfs-modal-btn > svg {
+	width: 1.1em;
+	height: 1.1em;
+	flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TEXT FIELD  (.cfs-field--text)
+   Display-only static text / heading block.
+   No input element — purely informational content between fields.
+   ───────────────────────────────────────────────────────────── */
+.cfs-text-content {
+	margin: 0;
+	line-height: 1.55;
+	font-size: 0.95em;
+	color: #444;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RADIO FIELD  (.cfs-field--radio)
+   Fieldset wrapper, legend heading, and card-style radio options.
+   ───────────────────────────────────────────────────────────── */
+
+/* Reset fieldset browser defaults. */
+.cfs-field--radio {
+	border: none;
+	margin-inline: 0;
+	padding-inline: 0;
+}
+
+/* Group question / heading — visually replaces the floating label. */
+.cfs-field-legend {
+	display: block;
+	width: 100%;
+	margin-bottom: 0.6rem;
+	padding: 0;
+	font-size: 1em;
+	font-weight: 600;
+	color: #333;
+	line-height: 1.3;
+}
+
+/* Vertical stack of radio cards. */
+.cfs-radio-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+}
+
+/* Each option — a bordered card containing the radio + label text. */
+.cfs-radio-label {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.55rem 0.9rem;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	background-color: #fff;
+	font-size: 0.95em;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-radio-label:hover {
+	border-color: #0073aa;
+	background-color: #f0f7fb;
+}
+
+/* Selected card highlight (via :has — works in all modern browsers). */
+.cfs-radio-label:has(.cfs-radio:checked) {
+	border-color: #0073aa;
+	background-color: #f0f7fb;
+}
+
+/* Bold text on selected option (sibling selector fallback for older browsers). */
+.cfs-radio:checked + span {
+	font-weight: 600;
+	color: #0073aa;
+}
+
+/* The radio input itself. */
+.cfs-radio {
+	flex-shrink: 0;
+	width: auto;
+	margin: 0;
+	accent-color: #0073aa;
+	cursor: pointer;
+}
+
+/* Error state: highlight the whole group. */
+.cfs-field--radio.cfs-field--has-error .cfs-field-legend {
+	color: #c0392b;
+}

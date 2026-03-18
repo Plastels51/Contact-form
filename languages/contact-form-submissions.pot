@@ -1,0 +1,102 @@
+# Copyright (C) 2026 Contact Form Submissions
+# This file is distributed under the same license as the Contact Form Submissions plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Contact Form Submissions 2.0.0\n"
+"Report-Msgid-Bugs-To: https://example.com\n"
+"POT-Creation-Date: 2026-03-14T00:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2026-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"X-Generator: WP-CLI 2.x\n"
+"X-Domain: contact-form-submissions\n"
+
+msgid "Отправить"
+msgstr ""
+
+msgid "Спасибо! Мы свяжемся с вами."
+msgstr ""
+
+msgid "Имя"
+msgstr ""
+
+msgid "Фамилия"
+msgstr ""
+
+msgid "Отчество"
+msgstr ""
+
+msgid "Телефон"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Комментарий"
+msgstr ""
+
+msgid "Выберите"
+msgstr ""
+
+msgid "Согласен"
+msgstr ""
+
+msgid "— Выберите —"
+msgstr ""
+
+msgid "Заявки"
+msgstr ""
+
+msgid "Все заявки"
+msgstr ""
+
+msgid "Настройки"
+msgstr ""
+
+msgid "Помощь"
+msgstr ""
+
+msgid "Новые"
+msgstr ""
+
+msgid "Обработанные"
+msgstr ""
+
+msgid "Спам"
+msgstr ""
+
+msgid "Все"
+msgstr ""
+
+msgid "Новая"
+msgstr ""
+
+msgid "Обработана"
+msgstr ""
+
+msgid "Экспорт CSV"
+msgstr ""
+
+msgid "Последние заявки"
+msgstr ""
+
+msgid "Новых заявок нет."
+msgstr ""
+
+msgid "Произошла ошибка. Попробуйте ещё раз."
+msgstr ""
+
+msgid "Обязательное поле"
+msgstr ""
+
+msgid "Некорректный email"
+msgstr ""
+
+msgid "Некорректный номер телефона"
+msgstr ""
+
+msgid "Отправка..."
+msgstr ""

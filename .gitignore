@@ -1,0 +1,23 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Node
+node_modules/
+package-lock.json
+
+# Build artifacts
+*.log
+
+# Internal docs (not for public repo)
+plan_razrabotki_contact_form.docx
