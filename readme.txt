@@ -1,5 +1,5 @@
 === Contact Form Submissions ===
-Contributors: yourname
+Contributors: Plastels51
 Tags: contact form, form, submissions, shortcode, modal
 Requires at least: 5.0
 Tested up to: 6.5
@@ -17,7 +17,7 @@ Contact Form Submissions lets you add contact forms to any page or post using th
 Features:
 
 * Shortcode-based forms with fully configurable fields
-* Field types: name, surname, patronymic, phone, email, comment, select, checkbox, agreement, hidden
+* Field types: name, surname, patronymic, phone, email, comment, select, checkbox, agreement, date, number, hidden
 * Multiple instances of the same field type via indexed suffixes (name_2, comment_3*, etc.)
 * Star (*) notation to mark required fields directly in the fields attribute
 * Dialog / modal mode: renders a trigger button + native &lt;dialog&gt; element
@@ -33,6 +33,8 @@ Features:
 * Dashboard widget showing the 5 latest new submissions
 * Full internationalisation support (i18n-ready)
 * Agreement field with HTML links support (privacy policy, terms, etc.)
+* Date and number fields with min/max/step constraints
+* HTML pattern validation for name fields (letters, hyphens, spaces only)
 
 == Installation ==
 
@@ -134,6 +136,31 @@ Add an icon before or after the text of the submit button or the modal trigger b
 
 Both buttons use `display: inline-flex` so icons are vertically centred with the label text automatically.
 
+= Date field =
+
+Use `date` for a date picker. Supports `{field}_min` and `{field}_max` in `YYYY-MM-DD` format:
+
+  [contact_form fields="name*,phone*,date*"
+    date_label="Date of birth"
+    date_min="1940-01-01"
+    date_max="2006-12-31"]
+
+= Number field =
+
+Use `number` for a numeric input. Supports `{field}_min`, `{field}_max`, and `{field}_step`:
+
+  [contact_form fields="name*,phone*,number*"
+    number_label="Age"
+    number_min="18"
+    number_max="99"
+    number_step="1"]
+
+= Pattern validation =
+
+Name, surname, and patronymic fields automatically include an HTML5 `pattern` attribute that allows only letters (Latin + Cyrillic), spaces, hyphens, and apostrophes. Override the pattern per field or disable it:
+
+  [contact_form fields="name*" name_pattern="[A-Za-z\s]+"]
+
 = Hidden fields / UTM parameters =
 
   [contact_form fields="name,phone,hidden" hidden_name="utm_source" hidden_value="google"]
@@ -186,6 +213,10 @@ Attribute              | Default      | Description
 * `comment_rows` — number of rows for the textarea (default: `4`).
 * `hidden_name`, `hidden_value` — name and value for a hidden input field.
 * `agreement_label` — overrides the global agreement text for this form instance (HTML links allowed).
+* `date_min`, `date_max` — minimum and maximum date in `YYYY-MM-DD` format.
+* `number_min`, `number_max` — minimum and maximum numeric value.
+* `number_step` — step increment for the number input (e.g. `1`, `0.01`).
+* `{field}_pattern` — HTML5 pattern regex for text fields (overrides the built-in default for name/surname/patronymic).
 
 = Default required values =
 
@@ -201,6 +232,8 @@ select       | no
 checkbox     | no
 agreement    | no
 radio        | no
+date         | no
+number       | no
 text         | n/a (display only)
 
 == Field Types ==
@@ -226,6 +259,10 @@ text         | n/a (display only)
 `radio` — a radio button group rendered as bordered card buttons. Options defined via `{field}_options` (or the global `radio_options`) in `Label:value` format. Wrapped in `<fieldset>`/`<legend>` for full accessibility. Supports indexed variants (`radio_2`, etc.).
 
 `text` — a display-only block (no input element). Content comes from `{field}_label` and may contain `<a>`, `<strong>`, `<em>`, `<br>` tags. Use it for section headings, instructions, or any informational text between form fields. Supports indexed variants (`text_2`, `text_3`, etc.).
+
+`date` — a date picker (`type="date"`). Supports `date_min` and `date_max` attributes in `YYYY-MM-DD` format. The label floats above the input permanently since the browser always renders date picker UI. Validated both client-side (HTML5 constraint validation) and server-side (Y-m-d format + min/max).
+
+`number` — a numeric input (`type="number"`). Supports `number_min`, `number_max`, and `number_step`. The label floats above the input permanently. Validated both client-side and server-side.
 
 `hidden` — a hidden input. Set `hidden_name` and `hidden_value`.
 
@@ -277,6 +314,23 @@ A badge on the menu item shows the count of unread (`new`) submissions, cached f
   apply_filters( 'cfs_icon_library',     $icons )
 
 == Changelog ==
+
+= 2.1.0 =
+
+* New field type: `date` with min/max constraint validation.
+* New field type: `number` with min/max/step constraint validation.
+* HTML5 `pattern` attribute on name/surname/patronymic fields (letters, hyphens, spaces, apostrophes).
+* Pattern override via `{field}_pattern` shortcode attribute.
+* Client-side validation uses `field.validity` API for date, number, and pattern errors.
+* Server-side validation for date format (Y-m-d) and number (is_numeric + min/max).
+* Honeypot fields renamed to non-obvious names to prevent browser autofill interference.
+* Debug mode: checkbox in settings enables `[CFS]` console logging for form lifecycle debugging.
+* Fixed: `wp_localize_script` boolean casting — debug flag now checks both `true` and `"1"`.
+* Fixed: CFS_VERSION bumped to bust browser cache on JS/CSS updates.
+* Admin: detail page restructured into postbox layout (Applicant / Form Data / Submission Info sections).
+* Admin: agreement and checkbox fields hidden from detail view.
+* Dashboard widget: 3-counter summary (New / Processed / Spam) + 10 latest submissions with status dots.
+* Submit button and modal button accept `button_class` / `modal_button_class` for custom CSS classes.
 
 = 2.0.0 =
 

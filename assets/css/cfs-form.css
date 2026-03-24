@@ -259,6 +259,29 @@
 	cursor: pointer;
 }
 
+
+/* ─────────────────────────────────────────────────────────────
+   DATE & NUMBER FIELDS
+   type="date" and type="number" always show browser UI, so the
+   label starts in the floated position (PHP adds class "focused"
+   to the wrapper). Hide native number spinners via appearance
+   only when desired — kept visible here as they aid usability.
+   ───────────────────────────────────────────────────────────── */
+.cfs-field--date .cfs-input,
+.cfs-field--number .cfs-input {
+	cursor: text;
+}
+
+/* Number: constrain width to avoid overly wide spinner box. */
+.cfs-field--number .cfs-input {
+	-moz-appearance: textfield; /* Firefox: hide spinner */
+}
+
+.cfs-field--number .cfs-input::-webkit-inner-spin-button,
+.cfs-field--number .cfs-input::-webkit-outer-spin-button {
+	opacity: 1; /* keep visible — helpful for number fields */
+}
+
 /* ─────────────────────────────────────────────────────────────
    ERROR SPAN  (per-field, below the input)
    ───────────────────────────────────────────────────────────── */

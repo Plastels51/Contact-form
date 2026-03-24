@@ -284,6 +284,51 @@ class CFS_Ajax_Handler {
 			}
 		}
 
+		// ── Date: format + optional min/max ──────────────────────────────────────
+		// ── Number: numeric + optional min/max/step ───────────────────────────────
+		if ( is_array( $form_config ) && ! empty( $form_config['constraints'] ) ) {
+			foreach ( (array) $form_config['constraints'] as $field_token => $constraint ) {
+				$value     = (string) ( $field_data[ $field_token ] ?? '' );
+				$con_type  = (string) ( $constraint['type'] ?? '' );
+
+				if ( '' === $value ) {
+					continue; // Empty optional field — skip.
+				}
+
+				if ( 'date' === $con_type ) {
+					// Validate Y-m-d format.
+					$date_obj = \DateTime::createFromFormat( 'Y-m-d', $value );
+					if ( ! $date_obj || $date_obj->format( 'Y-m-d' ) !== $value ) {
+						$errors[ $field_token ] = __( 'Некорректный формат даты.', 'contact-form-submissions' );
+						continue;
+					}
+					if ( ! empty( $constraint['min'] ) && $value < $constraint['min'] ) {
+						/* translators: %s: minimum date */
+						$errors[ $field_token ] = sprintf( __( 'Дата не может быть раньше %s.', 'contact-form-submissions' ), $constraint['min'] );
+					} elseif ( ! empty( $constraint['max'] ) && $value > $constraint['max'] ) {
+						/* translators: %s: maximum date */
+						$errors[ $field_token ] = sprintf( __( 'Дата не может быть позже %s.', 'contact-form-submissions' ), $constraint['max'] );
+					}
+				} elseif ( 'number' === $con_type ) {
+					if ( ! is_numeric( $value ) ) {
+						$errors[ $field_token ] = __( 'Введите числовое значение.', 'contact-form-submissions' );
+						continue;
+					}
+					$num = (float) $value;
+					$con_min  = $constraint['min'] ?? '';
+					$con_max  = $constraint['max'] ?? '';
+					if ( '' !== $con_min && $num < (float) $con_min ) {
+						/* translators: %s: minimum number */
+						$errors[ $field_token ] = sprintf( __( 'Минимальное значение: %s.', 'contact-form-submissions' ), $con_min );
+					} elseif ( '' !== $con_max && $num > (float) $con_max ) {
+						/* translators: %s: maximum number */
+						$errors[ $field_token ] = sprintf( __( 'Максимальное значение: %s.', 'contact-form-submissions' ), $con_max );
+					}
+				}
+			}
+		}
+
+
 		// ── Banned words → mark as spam ─────────────────────────────────────────
 		$banned_words_raw = get_option( 'cfs_banned_words', '' );
 		if ( ! empty( $banned_words_raw ) ) {

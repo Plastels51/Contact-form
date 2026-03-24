@@ -525,6 +525,45 @@
 			}
 		}
 
+
+	// Pattern mismatch — applies to name/surname/patronymic fields with pattern attribute.
+	if (field.validity && field.validity.patternMismatch) {
+		return i18n.invalid_name || 'Допустимы только буквы, дефис, пробел.';
+	}
+
+	// Date constraint validation (min / max).
+	if (field.type === 'date') {
+		if (field.validity && !field.validity.valid) {
+			if (field.validity.rangeUnderflow) {
+				return (i18n.date_min || 'Дата не может быть раньше ') + (field.min || '');
+			}
+			if (field.validity.rangeOverflow) {
+				return (i18n.date_max || 'Дата не может быть позже ') + (field.max || '');
+			}
+			if (field.validity.badInput) {
+				return i18n.invalid_date || 'Некорректная дата.';
+			}
+		}
+	}
+
+	// Number constraint validation (min / max / step).
+	if (field.type === 'number') {
+		if (field.validity && !field.validity.valid) {
+			if (field.validity.rangeUnderflow) {
+				return (i18n.num_min || 'Минимальное значение: ') + (field.min || '');
+			}
+			if (field.validity.rangeOverflow) {
+				return (i18n.num_max || 'Максимальное значение: ') + (field.max || '');
+			}
+			if (field.validity.stepMismatch) {
+				return i18n.num_step || 'Значение не соответствует шагу.';
+			}
+			if (field.validity.badInput) {
+				return i18n.invalid_number || 'Введите числовое значение.';
+			}
+		}
+	}
+
 		return '';
 	}
 

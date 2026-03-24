@@ -102,6 +102,14 @@ class CFS_Form_Builder {
 					'required'      => __( 'Обязательное поле', 'contact-form-submissions' ),
 					'invalid_email' => __( 'Некорректный email', 'contact-form-submissions' ),
 					'invalid_phone' => __( 'Некорректный номер телефона', 'contact-form-submissions' ),
+					'invalid_name'   => __( 'Допустимы только буквы, дефис и пробел.', 'contact-form-submissions' ),
+					'invalid_date'   => __( 'Некорректная дата.', 'contact-form-submissions' ),
+					'date_min'       => __( 'Дата не может быть раньше ', 'contact-form-submissions' ),
+					'date_max'       => __( 'Дата не может быть позже ', 'contact-form-submissions' ),
+					'invalid_number' => __( 'Введите числовое значение.', 'contact-form-submissions' ),
+					'num_min'        => __( 'Минимальное значение: ', 'contact-form-submissions' ),
+					'num_max'        => __( 'Максимальное значение: ', 'contact-form-submissions' ),
+					'num_step'       => __( 'Значение не соответствует шагу.', 'contact-form-submissions' ),
 				),
 			)
 		);
@@ -142,6 +150,8 @@ class CFS_Form_Builder {
 			'select'     => __( 'Выберите', 'contact-form-submissions' ),
 			'text'       => __( 'Текст', 'contact-form-submissions' ),
 			'radio'      => __( 'Выберите', 'contact-form-submissions' ),
+			'date'   => __( 'Дата', 'contact-form-submissions' ),
+			'number' => __( 'Число', 'contact-form-submissions' ),
 			'checkbox'   => __( 'Согласен', 'contact-form-submissions' ),
 			'agreement'  => __( 'Согласие', 'contact-form-submissions' ),
 		);
@@ -209,12 +219,14 @@ class CFS_Form_Builder {
 		$icons = array(
 
 			// ── Frequently used ─────────────────────────────────────────────
-			'user'     => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>',
-			'phone'    => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.87-.87a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
-			'email'    => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
+			'user'     => '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 11.9999C13.1867 11.9999 14.3467 11.648 15.3334 10.9888C16.3201 10.3295 17.0892 9.3924 17.5433 8.29604C17.9974 7.19969 18.1162 5.99329 17.8847 4.8294C17.6532 3.66551 17.0818 2.59642 16.2426 1.7573C15.4035 0.918186 14.3344 0.346741 13.1705 0.11523C12.0067 -0.116281 10.8003 0.00253868 9.7039 0.456664C8.60754 0.91079 7.67047 1.67983 7.01118 2.66652C6.35189 3.65322 6 4.81325 6 5.99994C6.00159 7.59075 6.63424 9.11595 7.75911 10.2408C8.88399 11.3657 10.4092 11.9984 12 11.9999ZM12 1.99994C12.7911 1.99994 13.5645 2.23454 14.2223 2.67406C14.8801 3.11359 15.3928 3.7383 15.6955 4.46921C15.9983 5.20011 16.0775 6.00438 15.9231 6.7803C15.7688 7.55623 15.3878 8.26896 14.8284 8.82837C14.269 9.38778 13.5563 9.76874 12.7804 9.92308C12.0044 10.0774 11.2002 9.99821 10.4693 9.69546C9.73836 9.39271 9.11365 8.88002 8.67412 8.22222C8.2346 7.56443 8 6.79107 8 5.99994C8 4.93908 8.42143 3.92166 9.17157 3.17151C9.92172 2.42137 10.9391 1.99994 12 1.99994V1.99994Z"></path><path d="M12 14.0006C9.61386 14.0033 7.32622 14.9523 5.63896 16.6396C3.95171 18.3268 3.00265 20.6145 3 23.0006C3 23.2658 3.10536 23.5202 3.29289 23.7077C3.48043 23.8953 3.73478 24.0006 4 24.0006C4.26522 24.0006 4.51957 23.8953 4.70711 23.7077C4.89464 23.5202 5 23.2658 5 23.0006C5 21.1441 5.7375 19.3636 7.05025 18.0509C8.36301 16.7381 10.1435 16.0006 12 16.0006C13.8565 16.0006 15.637 16.7381 16.9497 18.0509C18.2625 19.3636 19 21.1441 19 23.0006C19 23.2658 19.1054 23.5202 19.2929 23.7077C19.4804 23.8953 19.7348 24.0006 20 24.0006C20.2652 24.0006 20.5196 23.8953 20.7071 23.7077C20.8946 23.5202 21 23.2658 21 23.0006C20.9974 20.6145 20.0483 18.3268 18.361 16.6396C16.6738 14.9523 14.3861 14.0033 12 14.0006V14.0006Z"></path></svg>',	
+			'phone'    => '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.9602 16.6527L20.6202 14.8527C20.0428 14.303 19.2757 13.997 18.4785 13.9981C17.6813 13.9992 16.9151 14.3074 16.3392 14.8587L14.8702 16.0267C13.3144 15.3827 11.9012 14.4376 10.7117 13.2458C9.52228 12.0539 8.58006 10.6388 7.93921 9.08169L9.09721 7.62569C9.64893 7.04987 9.95751 6.28357 9.95881 5.4861C9.96012 4.68862 9.65404 3.92132 9.10421 3.34369L7.30621 0.999694C7.2798 0.964484 7.25107 0.931077 7.22021 0.899694C6.64913 0.325879 5.87515 -0.000108385 5.06562 -0.00778077C4.25609 -0.0154531 3.47607 0.295806 2.89421 0.858694L1.74421 1.85869C-5.97479 10.0687 13.9442 30.0037 22.1442 22.1587L23.0542 21.1097C23.6337 20.5286 23.9592 19.7414 23.9592 18.9207C23.9592 18.1 23.6337 17.3128 23.0542 16.7317C23.0243 16.7037 22.993 16.6773 22.9602 16.6527ZM21.5962 19.7527L20.6852 20.8027C14.7482 26.4177 -2.53979 10.1137 3.10721 3.32469L4.25721 2.32469C4.45636 2.12666 4.7237 2.01229 5.00446 2.00504C5.28522 1.99779 5.55811 2.0982 5.76721 2.28569L7.55321 4.60869C7.5794 4.64409 7.60814 4.67751 7.63921 4.70869C7.84348 4.91471 7.95809 5.19308 7.95809 5.48319C7.95809 5.77331 7.84348 6.05168 7.63921 6.25769C7.61107 6.28323 7.58468 6.31062 7.56021 6.33969L6.00421 8.29969C5.89343 8.43849 5.8216 8.60428 5.79612 8.78003C5.77063 8.95578 5.79241 9.13515 5.85921 9.29969C6.61236 11.3148 7.78988 13.1444 9.31198 14.6646C10.8341 16.1848 12.6652 17.3601 14.6812 18.1107C14.8435 18.1726 15.0192 18.1911 15.1909 18.1645C15.3625 18.1378 15.5243 18.0669 15.6602 17.9587L17.6202 16.3997C17.6496 16.376 17.6777 16.3506 17.7042 16.3237C17.8155 16.2163 17.9477 16.1329 18.0926 16.0787C18.2375 16.0246 18.3919 16.0008 18.5464 16.0088C18.7009 16.0169 18.852 16.0567 18.9905 16.1256C19.1289 16.1946 19.2517 16.2913 19.3512 16.4097L21.6772 18.1967C21.8679 18.4165 21.9656 18.7018 21.9498 18.9924C21.9339 19.283 21.8057 19.556 21.5922 19.7537L21.5962 19.7527Z"></path></svg>',
+			'email'    => '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 0.999878H5C3.67441 1.00147 2.40356 1.52876 1.46622 2.4661C0.528882 3.40344 0.00158786 4.67428 0 5.99988L0 17.9999C0.00158786 19.3255 0.528882 20.5963 1.46622 21.5337C2.40356 22.471 3.67441 22.9983 5 22.9999H19C20.3256 22.9983 21.5964 22.471 22.5338 21.5337C23.4711 20.5963 23.9984 19.3255 24 17.9999V5.99988C23.9984 4.67428 23.4711 3.40344 22.5338 2.4661C21.5964 1.52876 20.3256 1.00147 19 0.999878ZM5 2.99988H19C19.5988 3.00106 20.1835 3.18139 20.679 3.51768C21.1744 3.85397 21.5579 4.33082 21.78 4.88688L14.122 12.5459C13.5584 13.1072 12.7954 13.4223 12 13.4223C11.2046 13.4223 10.4416 13.1072 9.878 12.5459L2.22 4.88688C2.44215 4.33082 2.82561 3.85397 3.32105 3.51768C3.81648 3.18139 4.40121 3.00106 5 2.99988ZM19 20.9999H5C4.20435 20.9999 3.44129 20.6838 2.87868 20.1212C2.31607 19.5586 2 18.7955 2 17.9999V7.49988L8.464 13.9599C9.40263 14.8961 10.6743 15.4219 12 15.4219C13.3257 15.4219 14.5974 14.8961 15.536 13.9599L22 7.49988V17.9999C22 18.7955 21.6839 19.5586 21.1213 20.1212C20.5587 20.6838 19.7956 20.9999 19 20.9999Z"></path></svg>',
 			'comment'  => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
 			'select'   => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
-
+			'write'	   => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M18.6562 0.930194L6.4642 13.1222C5.99855 13.5853 5.62938 14.1363 5.37808 14.743C5.12679 15.3498 4.99835 16.0004 5.0002 16.6572V18.0002C5.0002 18.2654 5.10556 18.5198 5.2931 18.7073C5.48063 18.8948 5.73499 19.0002 6.0002 19.0002H7.3432C7.99997 19.002 8.65057 18.8736 9.25736 18.6223C9.86415 18.371 10.4151 18.0019 10.8782 17.5362L23.0702 5.34419C23.6546 4.75836 23.9828 3.96467 23.9828 3.13719C23.9828 2.30972 23.6546 1.51602 23.0702 0.930194C22.4759 0.362088 21.6854 0.0450439 20.8632 0.0450439C20.041 0.0450439 19.2505 0.362088 18.6562 0.930194ZM21.6562 3.93019L9.4642 16.1222C8.90033 16.6826 8.13821 16.9981 7.3432 17.0002H7.0002V16.6572C7.00229 15.8622 7.31777 15.1001 7.8782 14.5362L20.0702 2.34419C20.2838 2.14015 20.5678 2.02629 20.8632 2.02629C21.1586 2.02629 21.4426 2.14015 21.6562 2.34419C21.8661 2.55471 21.984 2.83989 21.984 3.13719C21.984 3.4345 21.8661 3.71968 21.6562 3.93019Z"></path><path border-block="" glass="" d="M23 8.979C22.7348 8.979 22.4804 9.08436 22.2929 9.27189C22.1054 9.45943 22 9.71379 22 9.979V15H18C17.2044 15 16.4413 15.3161 15.8787 15.8787C15.3161 16.4413 15 17.2044 15 18V22H5C4.20435 22 3.44129 21.6839 2.87868 21.1213C2.31607 20.5587 2 19.7957 2 19V5C2 4.20435 2.31607 3.44129 2.87868 2.87868C3.44129 2.31607 4.20435 2 5 2H14.042C14.3072 2 14.5616 1.89464 14.7491 1.70711C14.9366 1.51957 15.042 1.26522 15.042 1C15.042 0.734784 14.9366 0.48043 14.7491 0.292893C14.5616 0.105357 14.3072 0 14.042 0L5 0C3.67441 0.00158786 2.40356 0.528882 1.46622 1.46622C0.528882 2.40356 0.00158786 3.67441 0 5L0 19C0.00158786 20.3256 0.528882 21.5964 1.46622 22.5338C2.40356 23.4711 3.67441 23.9984 5 24H16.343C16.9999 24.0019 17.6507 23.8735 18.2576 23.6222C18.8646 23.3709 19.4157 23.0017 19.879 22.536L22.535 19.878C23.0008 19.4149 23.37 18.864 23.6215 18.2572C23.873 17.6504 24.0016 16.9998 24 16.343V9.979C24 9.71379 23.8946 9.45943 23.7071 9.27189C23.5196 9.08436 23.2652 8.979 23 8.979ZM18.465 21.122C18.063 21.523 17.5547 21.8006 17 21.922V18C17 17.7348 17.1054 17.4804 17.2929 17.2929C17.4804 17.1054 17.7348 17 18 17H21.925C21.8013 17.5535 21.524 18.0609 21.125 18.464L18.465 21.122Z"></path></svg>',
+			'check'    => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M22.3189 4.43107L8.49988 18.2491C8.40697 18.3423 8.29655 18.4164 8.17497 18.4669C8.05339 18.5174 7.92303 18.5434 7.79138 18.5434C7.65972 18.5434 7.52937 18.5174 7.40778 18.4669C7.2862 18.4164 7.17579 18.3423 7.08288 18.2491L1.73888 12.9001C1.64597 12.8068 1.53555 12.7328 1.41397 12.6823C1.29239 12.6318 1.16203 12.6058 1.03038 12.6058C0.898723 12.6058 0.768365 12.6318 0.646783 12.6823C0.5252 12.7328 0.414787 12.8068 0.321877 12.9001V12.9001C0.2286 12.993 0.154588 13.1034 0.104086 13.225C0.0535845 13.3466 0.0275879 13.4769 0.0275879 13.6086C0.0275879 13.7402 0.0535845 13.8706 0.104086 13.9922C0.154588 14.1137 0.2286 14.2242 0.321877 14.3171L5.66788 19.6621C6.23183 20.225 6.99607 20.5411 7.79288 20.5411C8.58968 20.5411 9.35393 20.225 9.91788 19.6621L23.7359 5.84707C23.829 5.75418 23.9029 5.64383 23.9533 5.52234C24.0037 5.40085 24.0297 5.2706 24.0297 5.13907C24.0297 5.00753 24.0037 4.87729 23.9533 4.7558C23.9029 4.63431 23.829 4.52396 23.7359 4.43107C23.643 4.33779 23.5326 4.26378 23.411 4.21328C23.2894 4.16278 23.159 4.13678 23.0274 4.13678C22.8957 4.13678 22.7654 4.16278 22.6438 4.21328C22.5222 4.26378 22.4118 4.33779 22.3189 4.43107Z"></path></svg>',
+			
 			// ── Contact / personal ───────────────────────────────────────────
 			'company'  => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 0-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>',
 			'location' => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
@@ -311,9 +323,11 @@ class CFS_Form_Builder {
 				'modal_button_text'        => __( 'Открыть форму', 'contact-form-submissions' ),
 				'modal_button_icon_before' => '',
 				'modal_button_icon_after'  => '',
-				// Submit button icons.
+				// Submit button icons and extra CSS class.
 				'button_icon_before' => '',
 				'button_icon_after'  => '',
+				'button_class'       => '',
+				'modal_button_class' => '',
 				// Field labels.
 				'name_label'        => __( 'Имя', 'contact-form-submissions' ),
 				'surname_label'     => __( 'Фамилия', 'contact-form-submissions' ),
@@ -347,6 +361,22 @@ class CFS_Form_Builder {
 				'comment_rows'   => '4',
 				'hidden_name'    => '',
 				'hidden_value'   => '',
+				// Date field.
+				'date_label'         => __( 'Дата', 'contact-form-submissions' ),
+				'date_placeholder'   => '',
+				'date_required'      => 'no',
+				'date_min'           => '',
+				'date_max'           => '',
+				// Number field.
+				'number_label'       => __( 'Число', 'contact-form-submissions' ),
+				'number_placeholder' => '',
+				'number_required'    => 'no',
+				'number_min'         => '',
+				'number_max'         => '',
+				'number_step'        => '',
+				// NOTE: {field}_pattern is NOT registered here intentionally.
+				// Picked up from $raw_atts merge-back only when user sets it explicitly.
+				// Built-in default for name/surname/patronymic lives in render_text_field().
 			),
 			$atts,
 			'contact_form'
@@ -494,6 +524,7 @@ class CFS_Form_Builder {
 				'field_types'       => $field_types,
 				'select_options'    => $atts['select_options'],
 				'radio_options_map' => $radio_options_map,
+				'constraints'       => $this->build_constraints_map( $clean_tokens, $atts ),
 			),
 			HOUR_IN_SECONDS
 		);
@@ -553,7 +584,7 @@ class CFS_Form_Builder {
 			$mbi_after  = $this->render_btn_icon( (string) ( $atts['modal_button_icon_after'] ?? '' ) );
 			?>
 			<button
-				class="cfs-modal-btn"
+				class="cfs-modal-btn<?php echo $atts['modal_button_class'] ? ' ' . esc_attr( implode( ' ', array_map( 'sanitize_html_class', preg_split( '/\s+/', trim( $atts['modal_button_class'] ), -1, PREG_SPLIT_NO_EMPTY ) ) ) ) : ''; ?>"
 				data-dialog="<?php echo esc_attr( $wrap_id ); ?>"
 				aria-haspopup="dialog"
 				aria-controls="<?php echo esc_attr( $wrap_id ); ?>"
@@ -624,7 +655,7 @@ class CFS_Form_Builder {
 		<div class="cfs-field cfs-field--submit">
 				<button
 					type="submit"
-					class="cfs-btn cfs-btn--submit"
+					class="cfs-btn cfs-btn--submit<?php echo $atts['button_class'] ? ' ' . esc_attr( implode( ' ', array_map( 'sanitize_html_class', preg_split( '/\s+/', trim( $atts['button_class'] ), -1, PREG_SPLIT_NO_EMPTY ) ) ) ) : ''; ?>"
 					id="cfs-submit-<?php echo esc_attr( $form_id ); ?>"
 				>
 					<?php
@@ -648,6 +679,37 @@ class CFS_Form_Builder {
 		}
 
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Build a per-token constraints map for date and number fields.
+	 * Stored in the form config transient so the AJAX handler can validate server-side.
+	 *
+	 * @param array $tokens Field tokens.
+	 * @param array $atts   Shortcode attributes.
+	 * @return array
+	 */
+	private function build_constraints_map( array $tokens, array $atts ): array {
+		$map = array();
+		foreach ( $tokens as $token ) {
+			$parsed = $this->parse_field_token( $token );
+			$base   = $parsed['base'];
+			if ( 'date' === $base ) {
+				$map[ $token ] = array(
+					'type' => 'date',
+					'min'  => (string) $this->get_field_attr( $token, 'date', 'min', $atts, '' ),
+					'max'  => (string) $this->get_field_attr( $token, 'date', 'max', $atts, '' ),
+				);
+			} elseif ( 'number' === $base ) {
+				$map[ $token ] = array(
+					'type' => 'number',
+					'min'  => (string) $this->get_field_attr( $token, 'number', 'min', $atts, '' ),
+					'max'  => (string) $this->get_field_attr( $token, 'number', 'max', $atts, '' ),
+					'step' => (string) $this->get_field_attr( $token, 'number', 'step', $atts, '' ),
+				);
+			}
+		}
+		return $map;
 	}
 
 	/**
@@ -689,6 +751,10 @@ class CFS_Form_Builder {
 				return $this->render_static_text_field( $field, $atts );
 			case 'radio':
 				return $this->render_radio_field( $form_id, $field, $atts );
+			case 'date':
+				return $this->render_date_field( $form_id, $field, $atts );
+			case 'number':
+				return $this->render_number_field( $form_id, $field, $atts );
 			default:
 				return '';
 		}
@@ -720,6 +786,10 @@ class CFS_Form_Builder {
 		$icon_name = (string) $this->get_field_attr( $field, $base, 'icon', $atts, '' );
 		$icon_html = $this->render_icon( $icon_name );
 		$has_icon  = '' !== $icon_html;
+		// Pattern for browser constraint validation (enables CSS :invalid + JS validity API).
+		// Built-in default covers Cyrillic + Latin letters, spaces, hyphens, apostrophes.
+		$default_pattern = "[A-Za-zА-ЯЁа-яёЁ\s\-']+";
+		$pattern         = (string) $this->get_field_attr( $field, $base, 'pattern', $atts, $default_pattern );
 
 		ob_start();
 		?>
@@ -742,6 +812,9 @@ class CFS_Form_Builder {
 					aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
+			<?php if ( $pattern ) : ?>
+				pattern="<?php echo esc_attr( $pattern ); ?>"
+			<?php endif; ?>
 			>
 			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
@@ -749,6 +822,150 @@ class CFS_Form_Builder {
 		<?php
 		return (string) ob_get_clean();
 	}
+
+	/**
+	 * Render a date input field.
+	 *
+	 * Supports optional min/max attributes for constraint validation.
+	 * The label is always rendered in the floated state (class "focused") because
+	 * the browser always shows the date picker placeholder UI.
+	 *
+	 * Shortcode example:
+	 *   [contact_form fields="name*,date*" date_label="Дата рождения"
+	 *                 date_min="1924-01-01" date_max="2006-12-31"]
+	 *
+	 * @param string $form_id Form ID.
+	 * @param string $field   Full field token (e.g. "date", "date_2").
+	 * @param array  $atts    Shortcode attributes.
+	 * @return string
+	 */
+	private function render_date_field( string $form_id, string $field, array $atts ): string {
+		$parsed = $this->parse_field_token( $field );
+		$base   = $parsed['base'];
+		$index  = $parsed['index'];
+
+		$field_id   = 'cfs-' . $form_id . '-' . $field;
+		$error_id   = $field_id . '-error';
+		$auto_label = $index > 1
+			? $this->get_base_label( $base ) . ' ' . $index
+			: $this->get_base_label( $base );
+
+		$label    = $this->get_field_attr( $field, $base, 'label', $atts, $auto_label );
+		$required = 'yes' === $this->get_field_attr( $field, $base, 'required', $atts, 'no' );
+		$min      = (string) $this->get_field_attr( $field, $base, 'min', $atts, '' );
+		$max      = (string) $this->get_field_attr( $field, $base, 'max', $atts, '' );
+
+		$icon_name = (string) $this->get_field_attr( $field, $base, 'icon', $atts, '' );
+		$icon_html = $this->render_icon( $icon_name );
+		$has_icon  = '' !== $icon_html;
+
+		ob_start();
+		?>
+		<div class="cfs-field cfs-field--date focused<?php echo $has_icon ? ' cfs-field--has-icon' : ''; ?>">
+			<label for="<?php echo esc_attr( $field_id ); ?>">
+				<?php echo esc_html( $label ); ?>
+				<?php if ( $required ) : ?>
+					<span class="cfs-required" aria-hidden="true">*</span>
+				<?php endif; ?>
+			</label>
+			<input
+				type="date"
+				id="<?php echo esc_attr( $field_id ); ?>"
+				name="cfs_<?php echo esc_attr( $field ); ?>"
+				class="cfs-input"
+				<?php if ( $min ) : ?>
+					min="<?php echo esc_attr( $min ); ?>"
+				<?php endif; ?>
+				<?php if ( $max ) : ?>
+					max="<?php echo esc_attr( $max ); ?>"
+				<?php endif; ?>
+				<?php if ( $required ) : ?>
+					aria-required="true"
+				<?php endif; ?>
+				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
+			>
+			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
+			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+	/**
+	 * Render a number input field.
+	 *
+	 * Supports min, max, and step attributes.
+	 * The label is always rendered in the floated state (class "focused") because
+	 * the browser always shows the spinner UI.
+	 *
+	 * Shortcode example:
+	 *   [contact_form fields="name*,number*" number_label="Возраст"
+	 *                 number_min="18" number_max="99" number_step="1"]
+	 *
+	 * @param string $form_id Form ID.
+	 * @param string $field   Full field token (e.g. "number", "number_2").
+	 * @param array  $atts    Shortcode attributes.
+	 * @return string
+	 */
+	private function render_number_field( string $form_id, string $field, array $atts ): string {
+		$parsed = $this->parse_field_token( $field );
+		$base   = $parsed['base'];
+		$index  = $parsed['index'];
+
+		$field_id   = 'cfs-' . $form_id . '-' . $field;
+		$error_id   = $field_id . '-error';
+		$auto_label = $index > 1
+			? $this->get_base_label( $base ) . ' ' . $index
+			: $this->get_base_label( $base );
+
+		$label       = $this->get_field_attr( $field, $base, 'label', $atts, $auto_label );
+		$required    = 'yes' === $this->get_field_attr( $field, $base, 'required', $atts, 'no' );
+		$placeholder = (string) $this->get_field_attr( $field, $base, 'placeholder', $atts, '' );
+		$min         = (string) $this->get_field_attr( $field, $base, 'min', $atts, '' );
+		$max         = (string) $this->get_field_attr( $field, $base, 'max', $atts, '' );
+		$step        = (string) $this->get_field_attr( $field, $base, 'step', $atts, '' );
+
+		$icon_name = (string) $this->get_field_attr( $field, $base, 'icon', $atts, '' );
+		$icon_html = $this->render_icon( $icon_name );
+		$has_icon  = '' !== $icon_html;
+
+		ob_start();
+		?>
+		<div class="cfs-field cfs-field--number focused<?php echo $has_icon ? ' cfs-field--has-icon' : ''; ?>">
+			<label for="<?php echo esc_attr( $field_id ); ?>">
+				<?php echo esc_html( $label ); ?>
+				<?php if ( $required ) : ?>
+					<span class="cfs-required" aria-hidden="true">*</span>
+				<?php endif; ?>
+			</label>
+			<input
+				type="number"
+				id="<?php echo esc_attr( $field_id ); ?>"
+				name="cfs_<?php echo esc_attr( $field ); ?>"
+				class="cfs-input"
+				<?php if ( $placeholder ) : ?>
+					placeholder="<?php echo esc_attr( $placeholder ); ?>"
+				<?php endif; ?>
+				<?php if ( $min !== '' ) : ?>
+					min="<?php echo esc_attr( $min ); ?>"
+				<?php endif; ?>
+				<?php if ( $max !== '' ) : ?>
+					max="<?php echo esc_attr( $max ); ?>"
+				<?php endif; ?>
+				<?php if ( $step !== '' ) : ?>
+					step="<?php echo esc_attr( $step ); ?>"
+				<?php endif; ?>
+				<?php if ( $required ) : ?>
+					aria-required="true"
+				<?php endif; ?>
+				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
+			>
+			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
+			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+
 
 	/**
 	 * Render phone field with mask (supports indexed variants).
@@ -1231,7 +1448,7 @@ class CFS_Form_Builder {
 					<?php endif; ?>
 					aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				>
-				<span><?php echo $label; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses() applied above ?></span>
+				<p><?php echo $label; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses() applied above ?></p>
 				<?php if ( $required ) : ?>
 					<span class="cfs-required" aria-hidden="true">*</span>
 				<?php endif; ?>
