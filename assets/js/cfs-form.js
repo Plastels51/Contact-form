@@ -718,6 +718,7 @@
 			if (dialog && typeof dialog.close === 'function') {
 				setTimeout(function () {
 					dialog.close();
+					tryLocomotiveToggle();
 					// Reset the banner so it does not reappear on next open.
 					if (msgEl) {
 						msgEl.style.display = 'none';
@@ -909,6 +910,17 @@
 	   and backdrop-click dismissal for every dialog.cfs-form-wrap--dialog.
 	   ═══════════════════════════════════════════════════════════ */
 
+	/**
+	 * Call locomotiveToggleScroll() if it exists on the global scope.
+	 * Used to lock/unlock page scroll when a modal is opened/closed.
+	 */
+	function tryLocomotiveToggle() {
+		if (typeof locomotiveToggleScroll === 'function') {
+			locomotiveToggleScroll();
+			log('locomotiveToggleScroll() called');
+		}
+	}
+
 	function initDialogs() {
 		// Open buttons — rendered BEFORE the <dialog> in the shortcode output.
 		document.querySelectorAll('.cfs-modal-btn').forEach(function (btn) {
@@ -917,6 +929,7 @@
 				var dialog   = dialogId ? document.getElementById(dialogId) : null;
 				if (dialog && typeof dialog.showModal === 'function') {
 					dialog.showModal();
+					tryLocomotiveToggle();
 					log('Dialog opened:', dialogId);
 				}
 			});
@@ -929,22 +942,38 @@
 				var dialog   = dialogId ? document.getElementById(dialogId) : null;
 				if (dialog && typeof dialog.close === 'function') {
 					dialog.close();
+					tryLocomotiveToggle();
 					log('Dialog closed:', dialogId);
 				}
 			});
 		});
 
 		/*
-		 * Backdrop click — clicking directly on the <dialog> element (i.e. outside
-		 * its rendered content area) closes the modal.
-		 * Note: the <dialog> element IS the backdrop-click target; a click on any
-		 * child element will have a different e.target, so this is safe.
+		 * Backdrop click — close the modal only when the click lands OUTSIDE
+		 * the visible dialog box (i.e. on the ::backdrop area).
+		 * We compare the click coordinates against the dialog's bounding rect
+		 * so that clicks on inner content (title, fields, padding) never
+		 * trigger a close.
 		 */
 		document.querySelectorAll('dialog.cfs-form-wrap--dialog').forEach(function (dialog) {
 			dialog.addEventListener('click', function (e) {
-				if (e.target === dialog) {
+				var rect = dialog.getBoundingClientRect();
+				var outsideX = e.clientX < rect.left || e.clientX > rect.right;
+				var outsideY = e.clientY < rect.top  || e.clientY > rect.bottom;
+				if (outsideX || outsideY) {
 					dialog.close();
+					tryLocomotiveToggle();
+					log('Dialog closed via backdrop click');
 				}
+			});
+
+			/*
+			 * Escape key — the browser closes <dialog> natively on Escape,
+			 * but we need to call locomotiveToggleScroll() as well.
+			 */
+			dialog.addEventListener('cancel', function () {
+				tryLocomotiveToggle();
+				log('Dialog closed via Escape key');
 			});
 		});
 	}
