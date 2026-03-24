@@ -21,9 +21,17 @@
 
 .cfs-form-title {
 	margin-top: 0;
-	margin-bottom: 1rem;
+	margin-bottom: 0.25rem;
 	font-size: 1.25em;
 	line-height: 1.3;
+}
+
+.cfs-form-subtitle {
+	margin-top: 0;
+	margin-bottom: 1rem;
+	font-size: 0.95em;
+	line-height: 1.5;
+	opacity: 0.75;
 }
 
 /* ─────────────────────────────────────────────────────────────

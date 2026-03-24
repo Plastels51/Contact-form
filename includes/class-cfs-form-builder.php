@@ -312,6 +312,7 @@ class CFS_Form_Builder {
 			array(
 				'form_id'         => '',
 				'title'           => '',
+			'subtitle'        => '',
 				'fields'          => 'name,phone,email',
 				'button_text'     => __( 'Отправить', 'contact-form-submissions' ),
 				'class'           => '',
@@ -618,6 +619,9 @@ class CFS_Form_Builder {
 		?>
 		<?php if ( ! empty( $atts['title'] ) ) : ?>
 			<h3 class="cfs-form-title"><?php echo esc_html( $atts['title'] ); ?></h3>
+		<?php endif; ?>
+		<?php if ( ! empty( $atts['subtitle'] ) ) : ?>
+			<p class="cfs-form-subtitle"><?php echo esc_html( $atts['subtitle'] ); ?></p>
 		<?php endif; ?>
 
 		<div class="cfs-form-message" role="alert" aria-live="polite" style="display:none;"></div>
