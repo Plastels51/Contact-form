@@ -994,6 +994,11 @@ class CFS_Form_Builder {
 		$icon_html = $this->render_icon( $icon_name );
 		$has_icon  = '' !== $icon_html;
 
+		// Pattern for browser constraint validation.
+		// Default matches the masked phone format: +7 (XXX) XXX-XX-XX.
+		$default_pattern = '\\+7 \\(\\d{3}\\) \\d{3}-\\d{2}-\\d{2}';
+		$pattern         = (string) $this->get_field_attr( $field, $base, 'pattern', $atts, $default_pattern );
+
 		ob_start();
 		?>
 		<div class="cfs-field cfs-field--<?php echo esc_attr( $base ); ?><?php echo $has_icon ? ' cfs-field--has-icon' : ''; ?>">
@@ -1014,6 +1019,9 @@ class CFS_Form_Builder {
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				autocomplete="tel"
+			<?php if ( $pattern ) : ?>
+				pattern="<?php echo esc_attr( $pattern ); ?>"
+			<?php endif; ?>
 			>
 			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
@@ -1049,6 +1057,11 @@ class CFS_Form_Builder {
 		$icon_html = $this->render_icon( $icon_name );
 		$has_icon  = '' !== $icon_html;
 
+		// Pattern for browser constraint validation (supplements type="email").
+		// Default: standard email format — local@domain.tld (min 2-char TLD).
+		$default_pattern = '[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}';
+		$pattern         = (string) $this->get_field_attr( $field, $base, 'pattern', $atts, $default_pattern );
+
 		ob_start();
 		?>
 		<div class="cfs-field cfs-field--<?php echo esc_attr( $base ); ?><?php echo $has_icon ? ' cfs-field--has-icon' : ''; ?>">
@@ -1071,6 +1084,9 @@ class CFS_Form_Builder {
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				autocomplete="email"
+			<?php if ( $pattern ) : ?>
+				pattern="<?php echo esc_attr( $pattern ); ?>"
+			<?php endif; ?>
 			>
 			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>

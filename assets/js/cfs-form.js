@@ -526,9 +526,22 @@
 		}
 
 
-	// Pattern mismatch — applies to name/surname/patronymic fields with pattern attribute.
+	// Pattern mismatch — field-specific messages based on field name.
 	if (field.validity && field.validity.patternMismatch) {
+		if (/^cfs_phone/.test(name)) {
+			return i18n.invalid_phone || 'Некорректный номер телефона';
+		}
+		if (/^cfs_email/.test(name)) {
+			return i18n.invalid_email || 'Некорректный email';
+		}
 		return i18n.invalid_name || 'Допустимы только буквы, дефис, пробел.';
+	}
+
+	// Type mismatch — e.g. type="email" browser validation.
+	if (field.validity && field.validity.typeMismatch) {
+		if (field.type === 'email') {
+			return i18n.invalid_email || 'Некорректный email';
+		}
 	}
 
 	// Date constraint validation (min / max).

@@ -157,9 +157,13 @@ Use `number` for a numeric input. Supports `{field}_min`, `{field}_max`, and `{f
 
 = Pattern validation =
 
-Name, surname, and patronymic fields automatically include an HTML5 `pattern` attribute that allows only letters (Latin + Cyrillic), spaces, hyphens, and apostrophes. Override the pattern per field or disable it:
+Name, surname, and patronymic fields automatically include an HTML5 `pattern` attribute that allows only letters (Latin + Cyrillic), spaces, hyphens, and apostrophes. Phone and email fields also include default patterns — phone matches the masked format `+7 (XXX) XXX-XX-XX`, email validates standard `local@domain.tld` format. Override the pattern per field:
 
   [contact_form fields="name*" name_pattern="[A-Za-z\s]+"]
+
+  [contact_form fields="phone*" phone_pattern="\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}"]
+
+  [contact_form fields="email*" email_pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"]
 
 = Hidden fields / UTM parameters =
 
@@ -244,9 +248,9 @@ text         | n/a (display only)
 
 `patronymic` — single-line text input, optional by default.
 
-`phone` — telephone input with +7 mask, required by default. The mask is applied in pure JavaScript; the raw digits are sent on submission.
+`phone` — telephone input with +7 mask, required by default. The mask is applied in pure JavaScript; the raw digits are sent on submission. Includes HTML5 `pattern` matching the masked format by default.
 
-`email` — email input, optional by default.
+`email` — email input, optional by default. Includes HTML5 `pattern` for format validation in addition to the native `type="email"` browser check.
 
 `comment` — textarea, optional by default. Use `comment_rows` to control height.
 
@@ -319,9 +323,9 @@ A badge on the menu item shows the count of unread (`new`) submissions, cached f
 
 * New field type: `date` with min/max constraint validation.
 * New field type: `number` with min/max/step constraint validation.
-* HTML5 `pattern` attribute on name/surname/patronymic fields (letters, hyphens, spaces, apostrophes).
-* Pattern override via `{field}_pattern` shortcode attribute.
-* Client-side validation uses `field.validity` API for date, number, and pattern errors.
+* HTML5 `pattern` attribute on name/surname/patronymic, phone, and email fields with sensible defaults.
+* Pattern override via `{field}_pattern` shortcode attribute for all pattern-enabled fields.
+* Client-side validation uses `field.validity` API for date, number, pattern, and type mismatch errors.
 * Server-side validation for date format (Y-m-d) and number (is_numeric + min/max).
 * Honeypot fields renamed to non-obvious names to prevent browser autofill interference.
 * Debug mode: checkbox in settings enables `[CFS]` console logging for form lifecycle debugging.
