@@ -17,7 +17,7 @@ Contact Form Submissions lets you add contact forms to any page or post using th
 Features:
 
 * Shortcode-based forms with fully configurable fields
-* Field types: name, surname, patronymic, phone, email, comment, select, checkbox, agreement, date, number, hidden
+* Field types: name, surname, patronymic, phone, email, comment, select, checkbox, agreement, radio, multicheck, date, number, url, text, hidden
 * Multiple instances of the same field type via indexed suffixes (name_2, comment_3*, etc.)
 * Star (*) notation to mark required fields directly in the fields attribute
 * Dialog / modal mode: renders a trigger button + native &lt;dialog&gt; element
@@ -25,16 +25,20 @@ Features:
 * Phone mask (+7 format) in pure JavaScript — no third-party libraries
 * Floating labels — animated labels replace static placeholders
 * AJAX submission with both client-side and server-side validation
+* HTML5 pattern validation for name, phone, and email fields (overridable per field)
+* Field hint text (`{field}_hint`) for adding helper text below any input
+* Card-style bordered UI for radio, multicheck, and checkbox groups
 * Spam protection via honeypot fields and form timestamp
 * Rate limiting per IP (5/min, 20/hour)
 * Admin panel: list view, filters, sorting, bulk actions, detail view
 * HTML email notifications with Reply-To and configurable recipients
 * CSV export with UTF-8 BOM for correct Excel display
-* Dashboard widget showing the 5 latest new submissions
+* Dashboard widget showing the 10 latest submissions with status summary
+* Two built-in style themes (standard / alternative) switchable from Settings
+* Button styles can be disabled independently of form styles
 * Full internationalisation support (i18n-ready)
 * Agreement field with HTML links support (privacy policy, terms, etc.)
 * Date and number fields with min/max/step constraints
-* HTML pattern validation for name fields (letters, hyphens, spaces only)
 
 == Installation ==
 
@@ -49,7 +53,7 @@ Features:
 
   [contact_form]
 
-  [contact_form fields="name,phone,email" title="Contact us"]
+  [contact_form fields="name,phone,email" title="Contact us" subtitle="We will reply within an hour"]
 
 = Required fields with star notation =
 
@@ -85,14 +89,46 @@ Use `radio` for a single-choice group rendered as bordered card buttons. Options
     radio_2_label="Preferred contact"
     radio_2_options="Phone:phone,Email:email"]
 
+= Multicheck (checkbox group) =
+
+Use `multicheck` for a multiple-selection checkbox group rendered as bordered card buttons (same style as radio). Options use the same `Label:value` format. The user may select any number of options. Required multicheck enforces at least one selection.
+
+  [contact_form fields="name*,phone*,multicheck*"
+    multicheck_label="Areas of interest"
+    multicheck_options="Events:events,Photography:photo,Social media:social,Transport:transport"]
+
+  [contact_form fields="name*,multicheck,multicheck_2*"
+    multicheck_label="Optional topics"
+    multicheck_options="A:a,B:b"
+    multicheck_2_label="Required topics"
+    multicheck_2_options="X:x,Y:y"]
+
+= URL field =
+
+Use `url` for a URL input (`type="url"`). Browser validates the format (must start with a protocol). Sanitised server-side with `esc_url_raw()`.
+
+  [contact_form fields="name*,phone*,url"
+    url_label="Link to social profile"
+    url_placeholder="https://"]
+
 = Static text / heading =
 
-Use `text` to insert a display-only block of content inside the form — for section headings, instructions, or legal notices. Supports HTML links, bold and italic via `{field}_label`. Indexed variants (`text_2`, `text_3`) are supported:
+Use `text` to insert a display-only block of content inside the form — for section headings, instructions, or legal notices. Supports HTML tags (`<p>`, `<br>`, `<strong>`, `<em>`, `<a>`, `<ul>`, `<ol>`, `<li>`) via `{field}_label`. Indexed variants (`text_2`, `text_3`) are supported:
 
-  [contact_form fields="name*,phone*,text,radio"
-    text_label="<strong>What would you like to do as a volunteer?</strong>"
-    radio_label="Have you volunteered before?"
-    radio_options="Yes:yes,No:no"]
+  [contact_form fields="text,name*,phone*"
+    text_label="<p>Please fill in all required fields.</p>"]
+
+  [contact_form fields="text,text_2,name*,phone*"
+    text_label="<strong>Hello!</strong>"
+    text_2_label="— We help organise events<br>— We post social content<br>— We take photos"]
+
+= Field hints =
+
+Any input field supports a `{field}_hint` attribute that renders a small helper text below the field (below the error span):
+
+  [contact_form fields="name*,phone*"
+    name_hint="Enter your full name"
+    phone_hint="We will only call during business hours"]
 
 = Agreement field =
 
@@ -103,7 +139,7 @@ The label text is taken from Submissions → Settings → Agreement text and may
 
 = Dialog / modal mode =
 
-Set `container="dialog"` to render the form inside a native &lt;dialog&gt; element. A trigger button is placed at the shortcode location; clicking it opens the modal.
+Set `container="dialog"` to render the form inside a native &lt;dialog&gt; element. A trigger button is placed at the shortcode location; clicking it opens the modal. Clicking outside the dialog content area closes it.
 
   [contact_form container="dialog" modal_button_text="Request a call" fields="name*,phone*"]
 
@@ -115,12 +151,6 @@ Each field accepts an `{field}_icon` attribute whose value is a key from the bui
     name_icon="user"
     phone_icon="phone"
     email_icon="email"]
-
-Indexed field variants work the same way:
-
-  [contact_form fields="name*,name_2,phone*"
-    name_icon="user"
-    name_2_icon="user"]
 
 = Button icons =
 
@@ -134,7 +164,13 @@ Add an icon before or after the text of the submit button or the modal trigger b
     modal_button_icon_after="phone"
     fields="name*,phone*"]
 
-Both buttons use `display: inline-flex` so icons are vertically centred with the label text automatically.
+= Button CSS class =
+
+Add custom CSS classes to the submit button or the modal trigger button:
+
+  [contact_form button_class="my-btn my-btn--primary" fields="name*,phone*"]
+
+  [contact_form container="dialog" modal_button_class="hero-btn" modal_button_text="Contact us" fields="name*,phone*"]
 
 = Date field =
 
@@ -182,22 +218,25 @@ Name, surname, and patronymic fields automatically include an HTML5 `pattern` at
 
 = General =
 
-Parameter             | Default                      | Description
---------------------- | ---------------------------- | -------------------------------------------
-form_id               | auto                         | Unique form identifier
-title                 | —                            | Heading displayed above the form
-fields                | name,phone,email             | Comma-separated list of field tokens. Append * to mark a field required.
-button_text           | Send                         | Submit button label
-class                 | —                            | Extra CSS class added to the form wrapper
-success_message       | Thank you! We will be in touch. | Message shown after successful submission
-redirect_url          | —                            | URL to redirect to after submission
-redirect_delay        | 2                            | Redirect delay in seconds
-container             | div                          | `div` for inline form, `dialog` for modal mode
-modal_button_text     | Open form                    | Label of the modal trigger button (dialog mode only)
-modal_button_icon_before | —                         | Icon key shown before the modal trigger button label
-modal_button_icon_after  | —                         | Icon key shown after the modal trigger button label
-button_icon_before    | —                            | Icon key shown before the submit button label
-button_icon_after     | —                            | Icon key shown after the submit button label
+Parameter                | Default                          | Description
+------------------------ | -------------------------------- | -------------------------------------------
+form_id                  | auto                             | Unique form identifier
+title                    | —                                | Heading displayed above the form (h3)
+subtitle                 | —                                | Subheading displayed below the title (p)
+fields                   | name,phone,email                 | Comma-separated list of field tokens. Append * to mark a field required.
+button_text              | Send                             | Submit button label
+button_class             | —                                | Extra CSS class(es) added to the submit button
+class                    | —                                | Extra CSS class added to the form wrapper
+success_message          | Thank you! We will be in touch.  | Message shown after successful submission
+redirect_url             | —                                | URL to redirect to after submission
+redirect_delay           | 2                                | Redirect delay in seconds
+container                | div                              | `div` for inline form, `dialog` for modal mode
+modal_button_text        | Open form                        | Label of the modal trigger button (dialog mode only)
+modal_button_class       | —                                | Extra CSS class(es) added to the modal trigger button
+modal_button_icon_before | —                                | Icon key shown before the modal trigger button label
+modal_button_icon_after  | —                                | Icon key shown after the modal trigger button label
+button_icon_before       | —                                | Icon key shown before the submit button label
+button_icon_after        | —                                | Icon key shown after the submit button label
 
 = Per-field attributes =
 
@@ -209,18 +248,21 @@ Attribute              | Default      | Description
 {field}_required       | see below    | `yes` or `no`
 {field}_placeholder    | —            | Placeholder text (shown inside the input)
 {field}_icon           | —            | Icon key from the built-in library
+{field}_hint           | —            | Helper text displayed below the field
+{field}_pattern        | see below    | HTML5 pattern regex override (name/surname/patronymic/phone/email)
 
 = Field-specific extras =
 
 * `select_options` — comma-separated `Label:value` pairs for the select field, e.g. `"Support:support,Sales:sales"`.
 * `radio_options` — comma-separated `Label:value` pairs for the radio field (global default); override per instance with `{field}_options`, e.g. `radio_2_options="Yes:yes,No:no"`.
+* `multicheck_options` — comma-separated `Label:value` pairs for the multicheck group; override per instance with `{field}_options`.
 * `comment_rows` — number of rows for the textarea (default: `4`).
 * `hidden_name`, `hidden_value` — name and value for a hidden input field.
 * `agreement_label` — overrides the global agreement text for this form instance (HTML links allowed).
 * `date_min`, `date_max` — minimum and maximum date in `YYYY-MM-DD` format.
 * `number_min`, `number_max` — minimum and maximum numeric value.
 * `number_step` — step increment for the number input (e.g. `1`, `0.01`).
-* `{field}_pattern` — HTML5 pattern regex for text fields (overrides the built-in default for name/surname/patronymic).
+* `{field}_pattern` — HTML5 pattern regex for text fields (overrides the built-in default for name/surname/patronymic/phone/email).
 
 = Default required values =
 
@@ -236,17 +278,19 @@ select       | no
 checkbox     | no
 agreement    | no
 radio        | no
+multicheck   | no
 date         | no
 number       | no
+url          | no
 text         | n/a (display only)
 
 == Field Types ==
 
-`name` — single-line text input, required by default.
+`name` — single-line text input, required by default. Pattern validates letters (Cyrillic + Latin), hyphens, spaces, apostrophes.
 
-`surname` — single-line text input, required by default.
+`surname` — single-line text input, required by default. Same pattern as name.
 
-`patronymic` — single-line text input, optional by default.
+`patronymic` — single-line text input, optional by default. Same pattern as name.
 
 `phone` — telephone input with +7 mask, required by default. The mask is applied in pure JavaScript; the raw digits are sent on submission. Includes HTML5 `pattern` matching the masked format by default.
 
@@ -256,13 +300,17 @@ text         | n/a (display only)
 
 `select` — dropdown list. Options are defined via `select_options` as `Label:value` pairs. The field label appears as a disabled placeholder option; no visible label element is rendered above the input.
 
-`checkbox` — a single checkbox with a customisable label.
+`checkbox` — a single checkbox rendered as a bordered card (same style as radio). Customisable label.
 
-`agreement` — a checkbox whose label is taken from the admin setting and supports HTML links (e.g. a privacy policy link). Rendered with `wp_kses()` so only `<a>` tags are allowed.
+`agreement` — a checkbox rendered as a bordered card whose label is taken from the admin setting and supports HTML links (e.g. a privacy policy link). Rendered with `wp_kses()` so only `<a>` tags are allowed.
 
 `radio` — a radio button group rendered as bordered card buttons. Options defined via `{field}_options` (or the global `radio_options`) in `Label:value` format. Wrapped in `<fieldset>`/`<legend>` for full accessibility. Supports indexed variants (`radio_2`, etc.).
 
-`text` — a display-only block (no input element). Content comes from `{field}_label` and may contain `<a>`, `<strong>`, `<em>`, `<br>` tags. Use it for section headings, instructions, or any informational text between form fields. Supports indexed variants (`text_2`, `text_3`, etc.).
+`multicheck` — a checkbox group rendered as bordered card buttons, allowing multiple selections. Options defined via `{field}_options` (or the global `multicheck_options`) in `Label:value` format. Required multicheck enforces at least one selection. Selected values are stored as a comma-separated string. Supports indexed variants (`multicheck_2`, etc.).
+
+`url` — a URL input (`type="url"`). Browser validates the format; sanitised server-side with `esc_url_raw()`. Optional by default.
+
+`text` — a display-only block (no input element). Content comes from `{field}_label` and may contain `<p>`, `<br>`, `<a>`, `<strong>`, `<em>`, `<ul>`, `<ol>`, `<li>` tags. Use it for section headings, instructions, or any informational text between form fields. Supports indexed variants (`text_2`, `text_3`, etc.).
 
 `date` — a date picker (`type="date"`). Supports `date_min` and `date_max` attributes in `YYYY-MM-DD` format. The label floats above the input permanently since the browser always renders date picker UI. Validated both client-side (HTML5 constraint validation) and server-side (Y-m-d format + min/max).
 
@@ -297,10 +345,28 @@ Button icons (`button_icon_before`, `button_icon_after`, `modal_button_icon_befo
 Go to **Submissions** in the WordPress admin sidebar:
 
 * **All Submissions** — filterable list with bulk actions: mark as processed, mark as spam, delete. Filters by status (`new` / `processed` / `spam`) and by `form_id`. Sortable by date and status. Paginated at 20 per page.
-* **Settings** — extra email recipients, email subject template, banned words list, IP / User-Agent saving toggle, plugin styles toggle, agreement field text.
+* **Settings** — extra email recipients, email subject template, banned words list, IP / User-Agent saving toggle, style theme selector, button styles toggle, debug mode, agreement field text.
 * **Help** — shortcode quick-reference.
 
 A badge on the menu item shows the count of unread (`new`) submissions, cached for 5 minutes.
+
+=== Style Settings ===
+
+**Theme** — choose between two built-in themes:
+
+* Standard — blue accent (#0073aa), 4px border radius (default)
+* Alternative — teal accent (#1abc9c), 8px border radius
+
+**Disable all plugin styles** — remove all front-end CSS (useful when building a custom stylesheet from scratch).
+
+**Disable button styles** — disable styling for the submit button and modal trigger button only, while keeping form field styles active. Useful when your theme already styles buttons globally.
+
+== Dashboard Widget ==
+
+The **Submissions** dashboard widget shows:
+
+* Counter badges: New / Processed / Spam
+* A table of the 10 most recent submissions (all statuses) with name, contact, form ID, date, and status indicator
 
 == Developer Hooks ==
 
@@ -321,20 +387,31 @@ A badge on the menu item shows the count of unread (`new`) submissions, cached f
 
 = 2.1.0 =
 
-* New field type: `date` with min/max constraint validation.
-* New field type: `number` with min/max/step constraint validation.
-* HTML5 `pattern` attribute on name/surname/patronymic, phone, and email fields with sensible defaults.
-* Pattern override via `{field}_pattern` shortcode attribute for all pattern-enabled fields.
+* New field type: `multicheck` — checkbox group allowing multiple selections, card-style UI, server-side whitelist validation.
+* New field type: `url` — `type="url"` input with browser format validation and `esc_url_raw()` server-side sanitisation.
+* New `subtitle` shortcode parameter — renders a `<p>` below the form title.
+* New `{field}_hint` attribute — renders small helper text below any input field.
+* Card-style bordered UI for `checkbox` and `agreement` fields — consistent with `radio` and `multicheck`.
+* Radio, checkbox, and multicheck inputs sized to `1.1rem`.
+* Button styles separated into `cfs-buttons.css` — can be disabled independently via Settings.
+* Two built-in style themes: Standard (blue, 4px radius) and Alternative (teal, 8px radius), switchable from Settings.
+* HTML5 `pattern` attribute on phone and email fields with sensible defaults (overridable via `{field}_pattern`).
+* `typeMismatch` validation for `type="email"` and `type="url"` inputs added to JS validation.
+* New `button_class` and `modal_button_class` attributes for custom CSS classes on buttons.
+* `text` field now supports `<p>`, `<ul>`, `<ol>`, `<li>` HTML tags in `{field}_label`.
+* Date field: `date` with min/max constraint validation.
+* Number field: `number` with min/max/step constraint validation.
+* Pattern validation on name/surname/patronymic fields (letters, hyphens, spaces, apostrophes).
 * Client-side validation uses `field.validity` API for date, number, pattern, and type mismatch errors.
-* Server-side validation for date format (Y-m-d) and number (is_numeric + min/max).
-* Honeypot fields renamed to non-obvious names to prevent browser autofill interference.
-* Debug mode: checkbox in settings enables `[CFS]` console logging for form lifecycle debugging.
+* Server-side validation for date (Y-m-d format + min/max) and number (is_numeric + min/max).
+* Honeypot fields renamed to non-obvious names (`cfs_hp_w`, `cfs_hp_x`) to prevent browser autofill interference.
+* Debug mode: checkbox in Settings enables `[CFS]` console logging for form lifecycle debugging.
 * Fixed: `wp_localize_script` boolean casting — debug flag now checks both `true` and `"1"`.
-* Fixed: CFS_VERSION bumped to bust browser cache on JS/CSS updates.
+* Fixed: `CFS_VERSION` bumped to bust browser cache on JS/CSS updates.
 * Admin: detail page restructured into postbox layout (Applicant / Form Data / Submission Info sections).
-* Admin: agreement and checkbox fields hidden from detail view.
+* Admin: `agreement` and `checkbox` fields hidden from detail view.
 * Dashboard widget: 3-counter summary (New / Processed / Spam) + 10 latest submissions with status dots.
-* Submit button and modal button accept `button_class` / `modal_button_class` for custom CSS classes.
+* Dialog: clicking outside the dialog content area (on the backdrop) closes it.
 
 = 2.0.0 =
 
