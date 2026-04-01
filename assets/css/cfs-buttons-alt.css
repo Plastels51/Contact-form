@@ -1,0 +1,36 @@
+/* Contact Form Submissions — Alternative theme: button overrides.
+ * Loaded when alt theme is active and button styles are enabled.
+ */
+
+.cfs-btn--submit {
+	background-color: #1abc9c;
+	border-radius: 8px;
+}
+
+.cfs-btn--submit:hover {
+	background-color: #16a085;
+}
+
+.cfs-btn--submit:focus-visible {
+	outline-color: #1abc9c;
+	background-color: #16a085;
+}
+
+.cfs-btn--submit:disabled,
+.cfs-btn--submit[aria-busy="true"] {
+	background-color: #1abc9c;
+}
+
+.cfs-modal-btn {
+	background-color: #1abc9c;
+	border-radius: 8px;
+}
+
+.cfs-modal-btn:hover {
+	background-color: #16a085;
+}
+
+.cfs-modal-btn:focus-visible {
+	outline-color: #1abc9c;
+	background-color: #16a085;
+}

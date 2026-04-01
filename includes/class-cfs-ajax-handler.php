@@ -108,8 +108,22 @@ class CFS_Ajax_Handler {
 				continue;
 			}
 
+			$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token ); // "comment_2" → "comment".
+
+			// Multicheck sends an array of checked values; join to comma-separated string.
+			if ( 'multicheck' === $base_type && is_array( $post_value ) ) {
+				$sanitized_vals = array();
+				foreach ( $post_value as $v ) {
+					$clean = sanitize_key( wp_unslash( (string) $v ) );
+					if ( '' !== $clean ) {
+						$sanitized_vals[] = $clean;
+					}
+				}
+				$field_data[ $field_token ] = implode( ',', $sanitized_vals );
+				continue;
+			}
+
 			$post_value = is_array( $post_value ) ? '' : (string) $post_value;
-			$base_type  = (string) preg_replace( '/(_\d+)$/', '', $field_token ); // "comment_2" → "comment".
 
 			switch ( $base_type ) {
 				case 'email':
@@ -122,6 +136,9 @@ class CFS_Ajax_Handler {
 					break;
 				case 'comment':
 					$field_data[ $field_token ] = sanitize_textarea_field( wp_unslash( $post_value ) );
+					break;
+				case 'url':
+					$field_data[ $field_token ] = esc_url_raw( wp_unslash( $post_value ) );
 					break;
 				default:
 					$field_data[ $field_token ] = sanitize_text_field( wp_unslash( $post_value ) );
@@ -280,6 +297,34 @@ class CFS_Ajax_Handler {
 				if ( ! in_array( $value, $allowed_vals, true ) ) {
 					$error_msg              = __( 'Недопустимое значение.', 'contact-form-submissions' );
 					$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
+				}
+			}
+		}
+
+		// ── Multicheck: each selected value must be in the whitelist ────────────
+		if ( is_array( $form_config ) && ! empty( $form_config['multicheck_options_map'] ) ) {
+			$mcheck_map = (array) $form_config['multicheck_options_map'];
+			foreach ( $field_data as $field_token => $value ) {
+				$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
+				if ( 'multicheck' !== $base_type || empty( $value ) ) {
+					continue;
+				}
+				if ( ! isset( $mcheck_map[ $field_token ] ) ) {
+					continue;
+				}
+				$allowed_vals = array();
+				foreach ( explode( ',', (string) $mcheck_map[ $field_token ] ) as $opt ) {
+					$parts = explode( ':', trim( $opt ), 2 );
+					if ( 2 === count( $parts ) ) {
+						$allowed_vals[] = sanitize_key( trim( $parts[1] ) );
+					}
+				}
+				foreach ( explode( ',', $value ) as $selected ) {
+					if ( ! in_array( $selected, $allowed_vals, true ) ) {
+						$error_msg              = __( 'Недопустимое значение.', 'contact-form-submissions' );
+						$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
+						break;
+					}
 				}
 			}
 		}

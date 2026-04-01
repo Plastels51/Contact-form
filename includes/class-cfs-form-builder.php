@@ -79,6 +79,35 @@ class CFS_Form_Builder {
 				array(),
 				CFS_VERSION
 			);
+
+			// Alternative theme — loaded after the default to override styles.
+			if ( 'alt' === get_option( 'cfs_style_theme', 'default' ) ) {
+				wp_enqueue_style(
+					'cfs-form-alt',
+					CFS_PLUGIN_URL . 'assets/css/cfs-form-alt.css',
+					array( 'cfs-form' ),
+					CFS_VERSION
+				);
+			}
+
+			// Button styles — separate file so they can be disabled independently.
+			if ( get_option( 'cfs_disable_btn_styles', 'no' ) !== 'yes' ) {
+				wp_enqueue_style(
+					'cfs-buttons',
+					CFS_PLUGIN_URL . 'assets/css/cfs-buttons.css',
+					array( 'cfs-form' ),
+					CFS_VERSION
+				);
+
+				if ( 'alt' === get_option( 'cfs_style_theme', 'default' ) ) {
+					wp_enqueue_style(
+						'cfs-buttons-alt',
+						CFS_PLUGIN_URL . 'assets/css/cfs-buttons-alt.css',
+						array( 'cfs-buttons' ),
+						CFS_VERSION
+					);
+				}
+			}
 		}
 
 		wp_enqueue_script(
@@ -103,6 +132,8 @@ class CFS_Form_Builder {
 					'invalid_email' => __( 'Некорректный email', 'contact-form-submissions' ),
 					'invalid_phone' => __( 'Некорректный номер телефона', 'contact-form-submissions' ),
 					'invalid_name'   => __( 'Допустимы только буквы, дефис и пробел.', 'contact-form-submissions' ),
+					'select_one'     => __( 'Выберите хотя бы один вариант.', 'contact-form-submissions' ),
+					'invalid_url'    => __( 'Введите корректный URL (например, https://...).', 'contact-form-submissions' ),
 					'invalid_date'   => __( 'Некорректная дата.', 'contact-form-submissions' ),
 					'date_min'       => __( 'Дата не может быть раньше ', 'contact-form-submissions' ),
 					'date_max'       => __( 'Дата не может быть позже ', 'contact-form-submissions' ),
@@ -154,6 +185,8 @@ class CFS_Form_Builder {
 			'number' => __( 'Число', 'contact-form-submissions' ),
 			'checkbox'   => __( 'Согласен', 'contact-form-submissions' ),
 			'agreement'  => __( 'Согласие', 'contact-form-submissions' ),
+			'multicheck' => __( 'Выберите', 'contact-form-submissions' ),
+			'url'        => __( 'Ссылка', 'contact-form-submissions' ),
 		);
 		return $labels[ $base ] ?? ucfirst( $base );
 	}
@@ -375,6 +408,14 @@ class CFS_Form_Builder {
 				'number_min'         => '',
 				'number_max'         => '',
 				'number_step'        => '',
+				// Multicheck field.
+				'multicheck_label'    => __( 'Выберите', 'contact-form-submissions' ),
+				'multicheck_required' => 'no',
+				'multicheck_options'  => '',
+				// URL field.
+				'url_label'       => __( 'Ссылка', 'contact-form-submissions' ),
+				'url_required'    => 'no',
+				'url_placeholder' => '',
 				// NOTE: {field}_pattern is NOT registered here intentionally.
 				// Picked up from $raw_atts merge-back only when user sets it explicitly.
 				// Built-in default for name/surname/patronymic lives in render_text_field().
@@ -504,28 +545,34 @@ class CFS_Form_Builder {
 		 * TTL: 1 hour — enough for a typical user session.
 		 * Key: cfs_form_config_{form_id}  (see CLAUDE.md § Производительность).
 		 */
-		// Build per-token radio options map for server-side whitelist validation.
-		$radio_options_map = array();
+		// Build per-token radio and multicheck options maps for server-side whitelist validation.
+		$radio_options_map      = array();
+		$multicheck_options_map = array();
 		foreach ( $clean_tokens as $token ) {
 			$parsed = $this->parse_field_token( $token );
-			if ( 'radio' !== $parsed['base'] ) {
-				continue;
-			}
-			$opts = (string) $this->get_field_attr( $token, 'radio', 'options', $atts, '' );
-			if ( '' !== $opts ) {
-				$radio_options_map[ $token ] = $opts;
+			if ( 'radio' === $parsed['base'] ) {
+				$opts = (string) $this->get_field_attr( $token, 'radio', 'options', $atts, '' );
+				if ( '' !== $opts ) {
+					$radio_options_map[ $token ] = $opts;
+				}
+			} elseif ( 'multicheck' === $parsed['base'] ) {
+				$opts = (string) $this->get_field_attr( $token, 'multicheck', 'options', $atts, $atts['multicheck_options'] ?? '' );
+				if ( '' !== $opts ) {
+					$multicheck_options_map[ $token ] = $opts;
+				}
 			}
 		}
 
 		set_transient(
 			'cfs_form_config_' . $form_id,
 			array(
-				'fields'            => $atts['fields'],
-				'required'          => $required_map,
-				'field_types'       => $field_types,
-				'select_options'    => $atts['select_options'],
-				'radio_options_map' => $radio_options_map,
-				'constraints'       => $this->build_constraints_map( $clean_tokens, $atts ),
+				'fields'                 => $atts['fields'],
+				'required'               => $required_map,
+				'field_types'            => $field_types,
+				'select_options'         => $atts['select_options'],
+				'radio_options_map'      => $radio_options_map,
+				'multicheck_options_map' => $multicheck_options_map,
+				'constraints'            => $this->build_constraints_map( $clean_tokens, $atts ),
 			),
 			HOUR_IN_SECONDS
 		);
@@ -759,6 +806,10 @@ class CFS_Form_Builder {
 				return $this->render_date_field( $form_id, $field, $atts );
 			case 'number':
 				return $this->render_number_field( $form_id, $field, $atts );
+			case 'multicheck':
+				return $this->render_multicheck_field( $form_id, $field, $atts );
+			case 'url':
+				return $this->render_url_field( $form_id, $field, $atts );
 			default:
 				return '';
 		}
@@ -794,6 +845,7 @@ class CFS_Form_Builder {
 		// Built-in default covers Cyrillic + Latin letters, spaces, hyphens, apostrophes.
 		$default_pattern = "[A-Za-zА-ЯЁа-яёЁ\s\-']+";
 		$pattern         = (string) $this->get_field_attr( $field, $base, 'pattern', $atts, $default_pattern );
+		$hint            = esc_html( (string) $this->get_field_attr( $field, $base, 'hint', $atts, '' ) );
 
 		ob_start();
 		?>
@@ -822,6 +874,9 @@ class CFS_Form_Builder {
 			>
 			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+			<?php if ( $hint ) : ?>
+				<p class="cfs-field-hint"><?php echo $hint; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — esc_html() applied above ?></p>
+			<?php endif; ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
@@ -1002,6 +1057,7 @@ class CFS_Form_Builder {
 		// Default matches the masked phone format: +7 (XXX) XXX-XX-XX.
 		$default_pattern = '\\+7 \\(\\d{3}\\) \\d{3}-\\d{2}-\\d{2}';
 		$pattern         = (string) $this->get_field_attr( $field, $base, 'pattern', $atts, $default_pattern );
+		$hint            = esc_html( (string) $this->get_field_attr( $field, $base, 'hint', $atts, '' ) );
 
 		ob_start();
 		?>
@@ -1029,6 +1085,9 @@ class CFS_Form_Builder {
 			>
 			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+			<?php if ( $hint ) : ?>
+				<p class="cfs-field-hint"><?php echo $hint; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — esc_html() applied above ?></p>
+			<?php endif; ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
@@ -1065,6 +1124,7 @@ class CFS_Form_Builder {
 		// Default: standard email format — local@domain.tld (min 2-char TLD).
 		$default_pattern = '[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}';
 		$pattern         = (string) $this->get_field_attr( $field, $base, 'pattern', $atts, $default_pattern );
+		$hint            = esc_html( (string) $this->get_field_attr( $field, $base, 'hint', $atts, '' ) );
 
 		ob_start();
 		?>
@@ -1094,6 +1154,9 @@ class CFS_Form_Builder {
 			>
 			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+			<?php if ( $hint ) : ?>
+				<p class="cfs-field-hint"><?php echo $hint; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — esc_html() applied above ?></p>
+			<?php endif; ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
@@ -1126,6 +1189,7 @@ class CFS_Form_Builder {
 		$icon_name = (string) $this->get_field_attr( $field, $base, 'icon', $atts, '' );
 		$icon_html = $this->render_icon( $icon_name );
 		$has_icon  = '' !== $icon_html;
+		$hint      = esc_html( (string) $this->get_field_attr( $field, $base, 'hint', $atts, '' ) );
 
 		ob_start();
 		?>
@@ -1151,6 +1215,9 @@ class CFS_Form_Builder {
 			></textarea>
 			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+			<?php if ( $hint ) : ?>
+				<p class="cfs-field-hint"><?php echo $hint; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — esc_html() applied above ?></p>
+			<?php endif; ?>
 		</div>
 		<?php
 		return (string) ob_get_clean();
@@ -1316,11 +1383,15 @@ class CFS_Form_Builder {
 			'em'     => array(),
 			'i'      => array(),
 			'br'     => array(),
+			'p'      => array(),
+			'ul'     => array(),
+			'ol'     => array(),
+			'li'     => array(),
 		);
 		$content = wp_kses( $content_raw, $allowed_html );
 
 		return '<div class="cfs-field cfs-field--text">'
-			. '<p class="cfs-text-content">' . $content . '</p>'  // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses() applied
+			. '<div class="cfs-text-content">' . $content . '</div>'  // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses() applied
 			. '</div>';
 	}
 
@@ -1475,6 +1546,146 @@ class CFS_Form_Builder {
 			</label>
 			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
 		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Render a URL input field (supports indexed variants).
+	 *
+	 * @param string $form_id Form ID.
+	 * @param string $field   Full field token (e.g. "url", "url_2").
+	 * @param array  $atts    Shortcode attributes.
+	 * @return string
+	 */
+	private function render_url_field( string $form_id, string $field, array $atts ): string {
+		$parsed = $this->parse_field_token( $field );
+		$base   = $parsed['base'];
+		$index  = $parsed['index'];
+
+		$field_id   = 'cfs-' . $form_id . '-' . $field;
+		$error_id   = $field_id . '-error';
+		$auto_label = $index > 1
+			? $this->get_base_label( $base ) . ' ' . $index
+			: $this->get_base_label( $base );
+
+		$label       = $this->get_field_attr( $field, $base, 'label', $atts, $auto_label );
+		$required    = 'yes' === $this->get_field_attr( $field, $base, 'required', $atts, 'no' );
+		$placeholder = (string) $this->get_field_attr( $field, $base, 'placeholder', $atts, '' );
+		$hint        = esc_html( (string) $this->get_field_attr( $field, $base, 'hint', $atts, '' ) );
+
+		$icon_name = (string) $this->get_field_attr( $field, $base, 'icon', $atts, '' );
+		$icon_html = $this->render_icon( $icon_name );
+		$has_icon  = '' !== $icon_html;
+
+		ob_start();
+		?>
+		<div class="cfs-field cfs-field--url<?php echo $has_icon ? ' cfs-field--has-icon' : ''; ?>">
+			<label for="<?php echo esc_attr( $field_id ); ?>">
+				<?php echo esc_html( $label ); ?>
+				<?php if ( $required ) : ?>
+					<span class="cfs-required" aria-hidden="true">*</span>
+				<?php endif; ?>
+			</label>
+			<input
+				type="url"
+				id="<?php echo esc_attr( $field_id ); ?>"
+				name="cfs_<?php echo esc_attr( $field ); ?>"
+				class="cfs-input"
+				<?php if ( $placeholder ) : ?>
+					placeholder="<?php echo esc_attr( $placeholder ); ?>"
+				<?php endif; ?>
+				<?php if ( $required ) : ?>
+					aria-required="true"
+				<?php endif; ?>
+				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
+				autocomplete="url"
+			>
+			<?php echo $icon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — SVG from internal library ?>
+			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+			<?php if ( $hint ) : ?>
+				<p class="cfs-field-hint"><?php echo $hint; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — esc_html() applied above ?></p>
+			<?php endif; ?>
+		</div>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Render a multicheck field — checkbox group allowing multiple selections.
+	 *
+	 * Options are defined via {field}_options in "Label:value" comma-separated format.
+	 * Selected values are submitted as an array (name="cfs_{field}[]") and stored
+	 * as a comma-separated string in form_data_json.
+	 *
+	 * @param string $form_id Form ID.
+	 * @param string $field   Full field token (e.g. "multicheck", "multicheck_2").
+	 * @param array  $atts    Shortcode attributes.
+	 * @return string
+	 */
+	private function render_multicheck_field( string $form_id, string $field, array $atts ): string {
+		$parsed = $this->parse_field_token( $field );
+		$base   = $parsed['base'];
+		$index  = $parsed['index'];
+
+		$error_id   = 'cfs-' . $form_id . '-' . $field . '-error';
+		$auto_label = $index > 1
+			? $this->get_base_label( $base ) . ' ' . $index
+			: $this->get_base_label( $base );
+
+		$label    = $this->get_field_attr( $field, $base, 'label', $atts, $auto_label );
+		$required = 'yes' === $this->get_field_attr( $field, $base, 'required', $atts, 'no' );
+		$hint     = esc_html( (string) $this->get_field_attr( $field, $base, 'hint', $atts, '' ) );
+
+		$options_raw = (string) $this->get_field_attr( $field, $base, 'options', $atts, $atts['multicheck_options'] ?? '' );
+		$options     = array();
+		if ( ! empty( $options_raw ) ) {
+			foreach ( explode( ',', $options_raw ) as $opt ) {
+				$parts = explode( ':', $opt, 2 );
+				if ( 2 === count( $parts ) ) {
+					$options[ sanitize_key( trim( $parts[1] ) ) ] = trim( $parts[0] );
+				}
+			}
+		}
+
+		$field_name = 'cfs_' . $field . '[]';
+
+		ob_start();
+		?>
+		<fieldset
+			class="cfs-field cfs-field--multicheck cfs-multicheck-fieldset"
+			aria-describedby="<?php echo esc_attr( $error_id ); ?>"
+			data-field="<?php echo esc_attr( $field ); ?>"
+			<?php if ( $required ) : ?>
+				data-required="true"
+			<?php endif; ?>
+		>
+			<legend class="cfs-field-legend">
+				<?php echo esc_html( $label ); ?>
+				<?php if ( $required ) : ?>
+					<span class="cfs-required" aria-hidden="true">*</span>
+				<?php endif; ?>
+			</legend>
+			<div class="cfs-multicheck-group">
+				<?php foreach ( $options as $val => $text ) : ?>
+					<?php $check_id = 'cfs-' . $form_id . '-' . $field . '-' . $val; ?>
+					<label class="cfs-multicheck-label" for="<?php echo esc_attr( $check_id ); ?>">
+						<input
+							type="checkbox"
+							id="<?php echo esc_attr( $check_id ); ?>"
+							name="<?php echo esc_attr( $field_name ); ?>"
+							value="<?php echo esc_attr( $val ); ?>"
+							class="cfs-multicheck-input"
+						>
+						<span><?php echo esc_html( $text ); ?></span>
+					</label>
+				<?php endforeach; ?>
+			</div>
+			<span id="<?php echo esc_attr( $error_id ); ?>" class="cfs-error" role="alert" aria-live="polite"></span>
+			<?php if ( $hint ) : ?>
+				<p class="cfs-field-hint"><?php echo $hint; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — esc_html() applied above ?></p>
+			<?php endif; ?>
+		</fieldset>
 		<?php
 		return (string) ob_get_clean();
 	}

@@ -1,0 +1,108 @@
+/* Contact Form Submissions — button styles.
+ * Separated from main form styles so they can be disabled independently.
+ * Rules:
+ *  - All classes prefixed with cfs-.
+ *  - No !important anywhere.
+ */
+
+/* ─────────────────────────────────────────────────────────────
+   SUBMIT BUTTON
+   ───────────────────────────────────────────────────────────── */
+.cfs-field--submit {
+	margin-top: 0.5rem;
+}
+
+.cfs-btn--submit {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.688rem 1.75rem;
+	background-color: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-size: 1em;
+	font-weight: 600;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: background-color 0.15s ease, opacity 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-btn--submit:hover {
+	background-color: #005c8a;
+}
+
+.cfs-btn--submit:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 2px;
+	background-color: #005c8a;
+}
+
+/* Loading / disabled state. */
+.cfs-btn--submit:disabled,
+.cfs-btn--submit[aria-busy="true"] {
+	opacity: 0.62;
+	cursor: not-allowed;
+	background-color: #0073aa;
+}
+
+/* Animated ellipsis while aria-busy. */
+.cfs-btn--submit[aria-busy="true"]::after {
+	content: '';
+	display: inline-block;
+	width: 0.9em;
+	overflow: hidden;
+	vertical-align: bottom;
+	animation: cfs-ellipsis 1.2s steps(4, end) infinite;
+}
+
+@keyframes cfs-ellipsis {
+	0%   { width: 0; }
+	25%  { width: 0.3em; }
+	50%  { width: 0.6em; }
+	75%  { width: 0.9em; }
+	100% { width: 0; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL TRIGGER BUTTON  (.cfs-modal-btn)
+   ───────────────────────────────────────────────────────────── */
+.cfs-modal-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.688rem 1.75rem;
+	background-color: #0073aa;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-size: 1em;
+	font-weight: 600;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-modal-btn:hover {
+	background-color: #005c8a;
+}
+
+.cfs-modal-btn:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 2px;
+	background-color: #005c8a;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BUTTON ICONS  (.cfs-btn--submit > svg, .cfs-modal-btn > svg)
+   ───────────────────────────────────────────────────────────── */
+.cfs-btn--submit > svg,
+.cfs-modal-btn > svg {
+	width: 1.1em;
+	height: 1.1em;
+	flex-shrink: 0;
+}

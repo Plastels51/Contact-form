@@ -1,0 +1,164 @@
+/* Contact Form Submissions — Alternative theme.
+ * Loaded AFTER cfs-form.css to override the default look.
+ * Features:
+ *  - Larger border-radius (8px).
+ *  - Teal accent (#1abc9c / #16a085).
+ *  - Softer input borders and shadows.
+ *  - Slightly different card hover background.
+ *
+ * Rules:
+ *  - All classes prefixed with cfs-.
+ *  - No !important anywhere.
+ */
+
+/* ── FORM WRAPPER ── */
+.cfs-form-wrap {
+	border-radius: 8px;
+}
+
+/* ── INPUTS ── */
+.cfs-input,
+.cfs-textarea,
+.cfs-select {
+	border-radius: 8px;
+	border-color: #ccc;
+}
+
+.cfs-input:focus,
+.cfs-textarea:focus,
+.cfs-select:focus {
+	border-color: #1abc9c;
+	box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.15);
+}
+
+/* ── FLOATING LABEL ── */
+.cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	color: #1abc9c;
+}
+
+.cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	color: #e74c3c;
+}
+
+/* ── REQUIRED ASTERISK ── */
+.cfs-required {
+	color: #e74c3c;
+}
+
+/* ── INPUT ERROR ── */
+.cfs-input--error,
+.cfs-input--error:focus {
+	border-color: #e74c3c;
+	box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.15);
+}
+
+.cfs-error {
+	color: #e74c3c;
+}
+
+/* ── RADIO CARDS ── */
+.cfs-radio-label {
+	border-radius: 8px;
+}
+
+.cfs-radio-label:hover {
+	border-color: #1abc9c;
+	background-color: #f0faf7;
+}
+
+.cfs-radio-label:has(.cfs-radio:checked) {
+	border-color: #1abc9c;
+	background-color: #f0faf7;
+}
+
+.cfs-radio:checked + span {
+	color: #16a085;
+}
+
+.cfs-radio {
+	accent-color: #1abc9c;
+}
+
+/* ── CHECKBOX / AGREEMENT CARDS ── */
+.cfs-field--checkbox .cfs-checkbox-label,
+.cfs-field--agreement .cfs-checkbox-label {
+	border-radius: 8px;
+}
+
+.cfs-field--checkbox .cfs-checkbox-label:hover,
+.cfs-field--agreement .cfs-checkbox-label:hover {
+	border-color: #1abc9c;
+	background-color: #f0faf7;
+}
+
+.cfs-field--checkbox .cfs-checkbox-label:has(.cfs-checkbox:checked),
+.cfs-field--agreement .cfs-checkbox-label:has(.cfs-checkbox:checked) {
+	border-color: #1abc9c;
+	background-color: #f0faf7;
+}
+
+.cfs-checkbox {
+	accent-color: #1abc9c;
+}
+
+/* ── MULTICHECK CARDS ── */
+.cfs-multicheck-label {
+	border-radius: 8px;
+}
+
+.cfs-multicheck-label:hover {
+	border-color: #1abc9c;
+	background-color: #f0faf7;
+}
+
+.cfs-multicheck-label:has(.cfs-multicheck-input:checked) {
+	border-color: #1abc9c;
+	background-color: #f0faf7;
+}
+
+.cfs-multicheck-input:checked + span {
+	color: #16a085;
+}
+
+.cfs-multicheck-input {
+	accent-color: #1abc9c;
+}
+
+/* ── FIELD ICONS ── */
+.cfs-field--has-icon > svg {
+	color: #999;
+}
+
+.cfs-field--has-icon.focused > svg {
+	color: #1abc9c;
+}
+
+.cfs-field--has-icon.cfs-field--has-error > svg {
+	color: #e74c3c;
+}
+
+/* ── AGREEMENT LINK ── */
+.cfs-field--agreement .cfs-checkbox-label a {
+	color: #1abc9c;
+}
+
+.cfs-field--agreement .cfs-checkbox-label a:hover {
+	color: #16a085;
+}
+
+/* ── SELECT FIELD ── */
+.cfs-select {
+	border-radius: 8px;
+}
+
+/* ── DIALOG ── */
+dialog.cfs-form-wrap--dialog {
+	border-radius: 12px;
+}
+
+/* ── SUCCESS MESSAGE ── */
+.cfs-success {
+	background-color: #f0faf7;
+	color: #16a085;
+	border-radius: 8px;
+}

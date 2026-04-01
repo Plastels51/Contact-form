@@ -537,10 +537,13 @@
 		return i18n.invalid_name || 'Допустимы только буквы, дефис, пробел.';
 	}
 
-	// Type mismatch — e.g. type="email" browser validation.
+	// Type mismatch — e.g. type="email" or type="url" browser validation.
 	if (field.validity && field.validity.typeMismatch) {
 		if (field.type === 'email') {
 			return i18n.invalid_email || 'Некорректный email';
+		}
+		if (field.type === 'url') {
+			return i18n.invalid_url || 'Введите корректный URL (например, https://...).';
 		}
 	}
 
@@ -594,6 +597,12 @@
 		form.querySelectorAll('.cfs-input, .cfs-checkbox').forEach(function (field) {
 			clearFieldError(field);
 		});
+		// Clear multicheck fieldset errors.
+		form.querySelectorAll('.cfs-multicheck-fieldset').forEach(function (fieldset) {
+			fieldset.classList.remove('cfs-field--has-error');
+			var span = fieldset.querySelector('.cfs-error');
+			if (span) { span.textContent = ''; }
+		});
 
 		form.querySelectorAll('.cfs-input, .cfs-checkbox').forEach(function (field) {
 			var msg = validateSingleField(field);
@@ -603,6 +612,20 @@
 				if (!firstError) {
 					firstError = field;
 				}
+				valid = false;
+			}
+		});
+
+		// Multicheck: at least one option must be checked when required.
+		form.querySelectorAll('.cfs-multicheck-fieldset[data-required="true"]').forEach(function (fieldset) {
+			var checked = fieldset.querySelectorAll('.cfs-multicheck-input:checked');
+			if (checked.length === 0) {
+				var msg  = i18n.select_one || 'Выберите хотя бы один вариант.';
+				var span = fieldset.querySelector('.cfs-error');
+				fieldset.classList.add('cfs-field--has-error');
+				if (span) { span.textContent = msg; }
+				log('Multicheck required:', fieldset.dataset.field, '→', msg);
+				if (!firstError) { firstError = fieldset; }
 				valid = false;
 			}
 		});
@@ -783,6 +806,17 @@
 						if (!firstErrorEl) {
 							firstErrorEl = radioWrap;
 						}
+					}
+				} else if (input.type === 'checkbox' && input.classList.contains('cfs-multicheck-input')) {
+					/*
+					 * Multicheck group: find the fieldset by data-field attribute.
+					 */
+					var mcheckFieldset = form.querySelector('.cfs-multicheck-fieldset[data-field="' + field + '"]');
+					if (mcheckFieldset) {
+						mcheckFieldset.classList.add('cfs-field--has-error');
+						var mcheckSpan = mcheckFieldset.querySelector('.cfs-error');
+						if (mcheckSpan) { mcheckSpan.textContent = msg; }
+						if (!firstErrorEl) { firstErrorEl = mcheckFieldset; }
 					}
 				} else {
 					setFieldError(input, msg);

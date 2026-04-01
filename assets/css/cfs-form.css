@@ -183,22 +183,43 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   CHECKBOX LABEL  (stays in normal flow — not floating)
+   CHECKBOX / AGREEMENT  (card-style, same as radio)
    ───────────────────────────────────────────────────────────── */
-.cfs-field--checkbox .cfs-checkbox-label {
+.cfs-field--checkbox .cfs-checkbox-label,
+.cfs-field--agreement .cfs-checkbox-label {
 	display: flex;
-	align-items: flex-start;
-	gap: 0.5rem;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.55rem 0.9rem;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	background-color: #fff;
 	font-size: 0.9em;
 	font-weight: normal;
 	line-height: 1.4;
 	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-field--checkbox .cfs-checkbox-label:hover,
+.cfs-field--agreement .cfs-checkbox-label:hover {
+	border-color: #0073aa;
+	background-color: #f0f7fb;
+}
+
+.cfs-field--checkbox .cfs-checkbox-label:has(.cfs-checkbox:checked),
+.cfs-field--agreement .cfs-checkbox-label:has(.cfs-checkbox:checked) {
+	border-color: #0073aa;
+	background-color: #f0f7fb;
 }
 
 .cfs-checkbox {
-	width: auto;
+	width: 1.1rem;
+	height: 1.1rem;
 	flex-shrink: 0;
-	margin-top: 0.2em;
+	margin: 0;
 	accent-color: #0073aa;
 }
 
@@ -303,67 +324,6 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SUBMIT BUTTON
-   ───────────────────────────────────────────────────────────── */
-.cfs-field--submit {
-	margin-top: 0.5rem;
-}
-
-.cfs-btn--submit {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.45rem;
-	padding: 0.688rem 1.75rem;
-	background-color: #0073aa;
-	color: #fff;
-	border: none;
-	border-radius: 4px;
-	font-size: 1em;
-	font-weight: 600;
-	line-height: 1.4;
-	cursor: pointer;
-	transition: background-color 0.15s ease, opacity 0.15s ease;
-	user-select: none;
-	-webkit-user-select: none;
-}
-
-.cfs-btn--submit:hover {
-	background-color: #005c8a;
-}
-
-.cfs-btn--submit:focus-visible {
-	outline: 3px solid #0073aa;
-	outline-offset: 2px;
-	background-color: #005c8a;
-}
-
-/* Loading / disabled state. */
-.cfs-btn--submit:disabled,
-.cfs-btn--submit[aria-busy="true"] {
-	opacity: 0.62;
-	cursor: not-allowed;
-	background-color: #0073aa;
-}
-
-/* Animated ellipsis while aria-busy. */
-.cfs-btn--submit[aria-busy="true"]::after {
-	content: '';
-	display: inline-block;
-	width: 0.9em;
-	overflow: hidden;
-	vertical-align: bottom;
-	animation: cfs-ellipsis 1.2s steps(4, end) infinite;
-}
-
-@keyframes cfs-ellipsis {
-	0%   { width: 0; }
-	25%  { width: 0.3em; }
-	50%  { width: 0.6em; }
-	75%  { width: 0.9em; }
-	100% { width: 0; }
-}
-
-/* ─────────────────────────────────────────────────────────────
    ADMIN STATUS BADGES
    ───────────────────────────────────────────────────────────── */
 .cfs-status {
@@ -404,40 +364,6 @@
 		width: 100%;
 		display: block;
 	}
-}
-
-/* ─────────────────────────────────────────────────────────────
-   MODAL TRIGGER BUTTON  (.cfs-modal-btn)
-   Rendered in page flow; opens the <dialog> on click.
-   Styled identically to .cfs-btn--submit for visual consistency,
-   but lives outside the form wrapper.
-   ───────────────────────────────────────────────────────────── */
-.cfs-modal-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.45rem;
-	padding: 0.688rem 1.75rem;
-	background-color: #0073aa;
-	color: #fff;
-	border: none;
-	border-radius: 4px;
-	font-size: 1em;
-	font-weight: 600;
-	line-height: 1.4;
-	cursor: pointer;
-	transition: background-color 0.15s ease;
-	user-select: none;
-	-webkit-user-select: none;
-}
-
-.cfs-modal-btn:hover {
-	background-color: #005c8a;
-}
-
-.cfs-modal-btn:focus-visible {
-	outline: 3px solid #0073aa;
-	outline-offset: 2px;
-	background-color: #005c8a;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -594,26 +520,6 @@ dialog.cfs-form-wrap--dialog::backdrop {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   BUTTON ICONS  (.cfs-btn--submit > svg, .cfs-modal-btn > svg)
-
-   Bare SVG icons rendered inside .cfs-btn--submit and
-   .cfs-modal-btn. The buttons use display:inline-flex + gap so
-   the icon and label text align automatically.
-
-   Usage in shortcode:
-     button_icon_before="phone"    ← icon left of submit text
-     button_icon_after="arrow"     ← icon right of submit text
-     modal_button_icon_before="phone"
-     modal_button_icon_after="arrow"
-   ───────────────────────────────────────────────────────────── */
-.cfs-btn--submit > svg,
-.cfs-modal-btn > svg {
-	width: 1.1em;
-	height: 1.1em;
-	flex-shrink: 0;
-}
-
-/* ─────────────────────────────────────────────────────────────
    TEXT FIELD  (.cfs-field--text)
    Display-only static text / heading block.
    No input element — purely informational content between fields.
@@ -693,7 +599,8 @@ dialog.cfs-form-wrap--dialog::backdrop {
 /* The radio input itself. */
 .cfs-radio {
 	flex-shrink: 0;
-	width: auto;
+	width: 1.1rem;
+	height: 1.1rem;
 	margin: 0;
 	accent-color: #0073aa;
 	cursor: pointer;
@@ -702,4 +609,77 @@ dialog.cfs-form-wrap--dialog::backdrop {
 /* Error state: highlight the whole group. */
 .cfs-field--radio.cfs-field--has-error .cfs-field-legend {
 	color: #c0392b;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MULTICHECK (checkbox group)
+   ───────────────────────────────────────────────────────────── */
+
+.cfs-field--multicheck {
+	border: none;
+	padding: 0;
+	margin: 0;
+}
+
+.cfs-multicheck-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	margin-top: 0.5rem;
+}
+
+.cfs-multicheck-label {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.55rem 0.9rem;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	background-color: #fff;
+	font-size: 0.95em;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-multicheck-label:hover {
+	border-color: #0073aa;
+	background-color: #f0f7fb;
+}
+
+.cfs-multicheck-label:has(.cfs-multicheck-input:checked) {
+	border-color: #0073aa;
+	background-color: #f0f7fb;
+}
+
+.cfs-multicheck-input:checked + span {
+	font-weight: 600;
+	color: #0073aa;
+}
+
+.cfs-multicheck-input {
+	flex-shrink: 0;
+	width: 1.1rem;
+	height: 1.1rem;
+	margin: 0;
+	accent-color: #0073aa;
+	cursor: pointer;
+}
+
+/* Error state. */
+.cfs-field--multicheck.cfs-field--has-error .cfs-field-legend {
+	color: #c0392b;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FIELD HINT
+   ───────────────────────────────────────────────────────────── */
+
+.cfs-field-hint {
+	margin: 0.35rem 0 0;
+	font-size: 0.85em;
+	line-height: 1.4;
+	color: #666;
 }

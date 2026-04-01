@@ -133,7 +133,9 @@ class CFS_Admin {
 		register_setting( 'cfs_settings_group', 'cfs_banned_words', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_save_ip', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_save_ua', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'cfs_settings_group', 'cfs_style_theme', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_disable_styles', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'cfs_settings_group', 'cfs_disable_btn_styles', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_debug_mode', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting(
 			'cfs_settings_group',
@@ -767,11 +769,29 @@ class CFS_Admin {
 						</td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Отключить стили плагина', 'contact-form-submissions' ); ?></th>
+						<th><?php esc_html_e( 'Тема оформления', 'contact-form-submissions' ); ?></th>
 						<td>
+							<?php $current_theme = get_option( 'cfs_style_theme', 'default' ); ?>
+							<label style="margin-right: 1.5rem;">
+								<input type="radio" name="cfs_style_theme" value="default" <?php checked( $current_theme, 'default' ); ?>>
+								<?php esc_html_e( 'Стандартная', 'contact-form-submissions' ); ?>
+							</label>
 							<label>
+								<input type="radio" name="cfs_style_theme" value="alt" <?php checked( $current_theme, 'alt' ); ?>>
+								<?php esc_html_e( 'Альтернативная', 'contact-form-submissions' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th><?php esc_html_e( 'Отключить стили', 'contact-form-submissions' ); ?></th>
+						<td>
+							<label style="display: block; margin-bottom: 0.4rem;">
 								<input type="checkbox" name="cfs_disable_styles" value="yes" <?php checked( get_option( 'cfs_disable_styles', 'no' ), 'yes' ); ?>>
-								<?php esc_html_e( 'Да', 'contact-form-submissions' ); ?>
+								<?php esc_html_e( 'Отключить все стили плагина', 'contact-form-submissions' ); ?>
+							</label>
+							<label style="display: block;">
+								<input type="checkbox" name="cfs_disable_btn_styles" value="yes" <?php checked( get_option( 'cfs_disable_btn_styles', 'no' ), 'yes' ); ?>>
+								<?php esc_html_e( 'Отключить стили кнопок (отправить / модальная)', 'contact-form-submissions' ); ?>
 							</label>
 						</td>
 					</tr>
