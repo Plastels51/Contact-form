@@ -1376,6 +1376,30 @@ class CFS_Form_Builder {
 			return '';
 		}
 
+		// Bracket notation: {p}, {ul}, {li}, etc. → real HTML tags.
+		// Real <tags> in shortcode attributes get destroyed by wpautop(),
+		// so we use curly-brace placeholders that survive the WP pipeline.
+		$bracket_map = array(
+			'{p}'       => '<p>',
+			'{/p}'      => '</p>',
+			'{ul}'      => '<ul>',
+			'{/ul}'     => '</ul>',
+			'{ol}'      => '<ol>',
+			'{/ol}'     => '</ol>',
+			'{li}'      => '<li>',
+			'{/li}'     => '</li>',
+			'{br}'      => '<br>',
+			'{b}'       => '<b>',
+			'{/b}'      => '</b>',
+			'{strong}'  => '<strong>',
+			'{/strong}' => '</strong>',
+			'{em}'      => '<em>',
+			'{/em}'     => '</em>',
+			'{i}'       => '<i>',
+			'{/i}'      => '</i>',
+		);
+		$content_raw = str_replace( array_keys( $bracket_map ), array_values( $bracket_map ), $content_raw );
+
 		$allowed_html = array(
 			'a'      => array( 'href' => array(), 'target' => array(), 'rel' => array(), 'class' => array() ),
 			'strong' => array(),
@@ -1388,8 +1412,7 @@ class CFS_Form_Builder {
 			'ol'     => array( 'class' => array() ),
 			'li'     => array(),
 		);
-		// Decode HTML entities so tags like &lt;p&gt; typed in a shortcode attribute survive wp_kses().
-		$content = wp_kses( html_entity_decode( $content_raw, ENT_QUOTES, 'UTF-8' ), $allowed_html );
+		$content = wp_kses( $content_raw, $allowed_html );
 
 		return '<div class="cfs-field cfs-field--text">' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses() applied
 			. $content
