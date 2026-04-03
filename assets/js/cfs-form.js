@@ -966,7 +966,8 @@
 
 		// Close buttons — rendered INSIDE the <dialog>.
 		document.querySelectorAll('.cfs-modal-close').forEach(function (btn) {
-			btn.addEventListener('click', function () {
+			btn.addEventListener('click', function (e) {
+				e.stopPropagation(); // Prevent click bubbling to the dialog backdrop handler.
 				var dialogId = btn.getAttribute('data-dialog');
 				var dialog   = dialogId ? document.getElementById(dialogId) : null;
 				if (dialog && typeof dialog.close === 'function') {
