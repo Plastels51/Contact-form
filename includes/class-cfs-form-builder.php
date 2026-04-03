@@ -1383,15 +1383,16 @@ class CFS_Form_Builder {
 			'em'     => array(),
 			'i'      => array(),
 			'br'     => array(),
-			'p'      => array(),
-			'ul'     => array(),
-			'ol'     => array(),
+			'p'      => array( 'class' => array() ),
+			'ul'     => array( 'class' => array() ),
+			'ol'     => array( 'class' => array() ),
 			'li'     => array(),
 		);
-		$content = wp_kses( $content_raw, $allowed_html );
+		// Decode HTML entities so tags like &lt;p&gt; typed in a shortcode attribute survive wp_kses().
+		$content = wp_kses( html_entity_decode( $content_raw, ENT_QUOTES, 'UTF-8' ), $allowed_html );
 
-		return '<div class="cfs-field cfs-field--text">'
-			. '<div class="cfs-text-content">' . $content . '</div>'  // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses() applied
+		return '<div class="cfs-field cfs-field--text">' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped — wp_kses() applied
+			. $content
 			. '</div>';
 	}
 

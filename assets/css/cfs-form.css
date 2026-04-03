@@ -523,12 +523,29 @@ dialog.cfs-form-wrap--dialog::backdrop {
    TEXT FIELD  (.cfs-field--text)
    Display-only static text / heading block.
    No input element — purely informational content between fields.
+   Supports inline HTML and block tags (p, ul, ol, li).
    ───────────────────────────────────────────────────────────── */
-.cfs-text-content {
-	margin: 0;
+.cfs-field--text {
 	line-height: 1.55;
 	font-size: 0.95em;
 	color: #444;
+}
+
+.cfs-field--text p,
+.cfs-field--text ul,
+.cfs-field--text ol {
+	margin: 0 0 0.5em;
+}
+
+.cfs-field--text ul,
+.cfs-field--text ol {
+	padding-left: 1.4em;
+}
+
+.cfs-field--text p:last-child,
+.cfs-field--text ul:last-child,
+.cfs-field--text ol:last-child {
+	margin-bottom: 0;
 }
 
 /* ─────────────────────────────────────────────────────────────
