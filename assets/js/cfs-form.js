@@ -741,7 +741,9 @@
 			if (dialog && typeof dialog.close === 'function') {
 				setTimeout(function () {
 					dialog.close();
-					tryLocomotiveToggle();
+					if (typeof locomotiveToggleScroll === 'function') {
+						locomotiveToggleScroll();
+					}
 					// Reset the banner so it does not reappear on next open.
 					if (msgEl) {
 						msgEl.style.display = 'none';
@@ -944,17 +946,6 @@
 	   and backdrop-click dismissal for every dialog.cfs-form-wrap--dialog.
 	   ═══════════════════════════════════════════════════════════ */
 
-	/**
-	 * Call locomotiveToggleScroll() if it exists on the global scope.
-	 * Used to lock/unlock page scroll when a modal is opened/closed.
-	 */
-	function tryLocomotiveToggle() {
-		if (typeof locomotiveToggleScroll === 'function') {
-			locomotiveToggleScroll();
-			log('locomotiveToggleScroll() called');
-		}
-	}
-
 	function initDialogs() {
 		// Open buttons — rendered BEFORE the <dialog> in the shortcode output.
 		document.querySelectorAll('.cfs-modal-btn').forEach(function (btn) {
@@ -963,7 +954,9 @@
 				var dialog   = dialogId ? document.getElementById(dialogId) : null;
 				if (dialog && typeof dialog.showModal === 'function') {
 					dialog.showModal();
-					tryLocomotiveToggle();
+					if (typeof locomotiveToggleScroll === 'function') {
+						locomotiveToggleScroll();
+					}
 					log('Dialog opened:', dialogId);
 				}
 			});
@@ -976,7 +969,9 @@
 				var dialog   = dialogId ? document.getElementById(dialogId) : null;
 				if (dialog && typeof dialog.close === 'function') {
 					dialog.close();
-					tryLocomotiveToggle();
+					if (typeof locomotiveToggleScroll === 'function') {
+						locomotiveToggleScroll();
+					}
 					log('Dialog closed:', dialogId);
 				}
 			});
@@ -996,7 +991,9 @@
 				var outsideY = e.clientY < rect.top  || e.clientY > rect.bottom;
 				if (outsideX || outsideY) {
 					dialog.close();
-					tryLocomotiveToggle();
+					if (typeof locomotiveToggleScroll === 'function') {
+						locomotiveToggleScroll();
+					}
 					log('Dialog closed via backdrop click');
 				}
 			});
@@ -1006,7 +1003,9 @@
 			 * but we need to call locomotiveToggleScroll() as well.
 			 */
 			dialog.addEventListener('cancel', function () {
-				tryLocomotiveToggle();
+				if (typeof locomotiveToggleScroll === 'function') {
+					locomotiveToggleScroll();
+				}
 				log('Dialog closed via Escape key');
 			});
 		});
