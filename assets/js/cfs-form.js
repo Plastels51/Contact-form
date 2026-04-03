@@ -743,6 +743,7 @@
 					dialog.close();
 					if (typeof locomotiveToggleScroll === 'function') {
 						locomotiveToggleScroll();
+						log('locomotiveToggleScroll() called');
 					}
 					// Reset the banner so it does not reappear on next open.
 					if (msgEl) {
@@ -956,6 +957,7 @@
 					dialog.showModal();
 					if (typeof locomotiveToggleScroll === 'function') {
 						locomotiveToggleScroll();
+						log('locomotiveToggleScroll() called');
 					}
 					log('Dialog opened:', dialogId);
 				}
@@ -971,6 +973,7 @@
 					dialog.close();
 					if (typeof locomotiveToggleScroll === 'function') {
 						locomotiveToggleScroll();
+						log('locomotiveToggleScroll() called');
 					}
 					log('Dialog closed:', dialogId);
 				}
@@ -993,6 +996,7 @@
 					dialog.close();
 					if (typeof locomotiveToggleScroll === 'function') {
 						locomotiveToggleScroll();
+						log('locomotiveToggleScroll() called');
 					}
 					log('Dialog closed via backdrop click');
 				}
