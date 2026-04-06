@@ -3,6 +3,7 @@
  * Rules:
  *  - All classes prefixed with cfs-.
  *  - No !important anywhere.
+ *  - Colors via CSS custom properties with fallbacks.
  */
 
 /* ─────────────────────────────────────────────────────────────
@@ -17,8 +18,8 @@
 	align-items: center;
 	gap: 0.45rem;
 	padding: 0.688rem 1.75rem;
-	background-color: #0073aa;
-	color: #fff;
+	background-color: var(--cfs-btn-bg, #0073aa);
+	color: var(--cfs-btn-text, #fff);
 	border: none;
 	border-radius: 4px;
 	font-size: 1em;
@@ -31,13 +32,13 @@
 }
 
 .cfs-btn--submit:hover {
-	background-color: #005c8a;
+	background-color: var(--cfs-btn-bg-hover, #005c8a);
 }
 
 .cfs-btn--submit:focus-visible {
-	outline: 3px solid #0073aa;
+	outline: 3px solid var(--cfs-accent, #0073aa);
 	outline-offset: 2px;
-	background-color: #005c8a;
+	background-color: var(--cfs-btn-bg-hover, #005c8a);
 }
 
 /* Loading / disabled state. */
@@ -45,7 +46,7 @@
 .cfs-btn--submit[aria-busy="true"] {
 	opacity: 0.62;
 	cursor: not-allowed;
-	background-color: #0073aa;
+	background-color: var(--cfs-btn-bg, #0073aa);
 }
 
 /* Animated ellipsis while aria-busy. */
@@ -74,8 +75,8 @@
 	align-items: center;
 	gap: 0.45rem;
 	padding: 0.688rem 1.75rem;
-	background-color: #0073aa;
-	color: #fff;
+	background-color: var(--cfs-btn-bg, #0073aa);
+	color: var(--cfs-btn-text, #fff);
 	border: none;
 	border-radius: 4px;
 	font-size: 1em;
@@ -88,13 +89,13 @@
 }
 
 .cfs-modal-btn:hover {
-	background-color: #005c8a;
+	background-color: var(--cfs-btn-bg-hover, #005c8a);
 }
 
 .cfs-modal-btn:focus-visible {
-	outline: 3px solid #0073aa;
+	outline: 3px solid var(--cfs-accent, #0073aa);
 	outline-offset: 2px;
-	background-color: #005c8a;
+	background-color: var(--cfs-btn-bg-hover, #005c8a);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -105,4 +106,5 @@
 	width: 1.1em;
 	height: 1.1em;
 	flex-shrink: 0;
+	fill: currentColor;
 }

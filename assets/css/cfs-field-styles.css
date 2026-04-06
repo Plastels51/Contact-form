@@ -13,6 +13,7 @@
  * Rules:
  *  - All classes prefixed with cfs-.
  *  - No !important anywhere.
+ *  - Colors via CSS custom properties (same as base).
  */
 
 /* =============================================================
@@ -32,14 +33,14 @@
 	border-left-color: transparent;
 	border-right-color: transparent;
 	border-bottom-width: 2px;
-	border-bottom-color: #0073aa;
+	border-bottom-color: var(--cfs-accent, #0073aa);
 	box-shadow: none;
 }
 
 .cfs-style--underline .cfs-input:focus-visible {
 	outline: none;
-	border-bottom-color: #0073aa;
-	box-shadow: 0 2px 0 0 #0073aa;
+	border-bottom-color: var(--cfs-accent, #0073aa);
+	box-shadow: 0 2px 0 0 var(--cfs-accent, #0073aa);
 }
 
 /* No background strip needed — there is no top border to cut through. */
@@ -54,14 +55,14 @@
 	border-top-color: transparent;
 	border-left-color: transparent;
 	border-right-color: transparent;
-	border-bottom-color: #e53e3e;
+	border-bottom-color: var(--cfs-error, #e53e3e);
 	box-shadow: none;
 }
 
 .cfs-style--underline .cfs-input--error:focus,
 .cfs-style--underline .cfs-input[aria-invalid="true"]:focus {
-	border-bottom-color: #c0392b;
-	box-shadow: 0 2px 0 0 #c0392b;
+	border-bottom-color: var(--cfs-error-dark, #c0392b);
+	box-shadow: 0 2px 0 0 var(--cfs-error-dark, #c0392b);
 }
 
 /* Select: keep the arrow visible, underline only. */
@@ -81,7 +82,7 @@
 	margin-bottom: 0.35rem;
 	font-size: 0.85em;
 	font-weight: 600;
-	color: #555;
+	color: var(--cfs-legend, #555);
 	background-color: transparent;
 	padding: 0;
 	max-width: none;
@@ -101,16 +102,16 @@
 	font-size: 0.85em;
 	background-color: transparent;
 	padding: 0;
-	color: #0073aa;
+	color: var(--cfs-accent, #0073aa);
 }
 
 .cfs-style--outlined-top .cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
-	color: #c0392b;
+	color: var(--cfs-error-dark, #c0392b);
 }
 
 /* Show native placeholder since label is not a placeholder substitute. */
 .cfs-style--outlined-top .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > .cfs-input::placeholder {
-	color: #aaa;
+	color: var(--cfs-label, #aaa);
 }
 
 /* Icons: reposition — label is static so icon aligns to input directly. */
@@ -139,23 +140,23 @@
    ============================================================= */
 
 .cfs-style--filled .cfs-input {
-	background-color: #f5f5f5;
+	background-color: var(--cfs-filled-bg, #f5f5f5);
 	border-color: transparent;
-	border-bottom-color: #999;
+	border-bottom-color: var(--cfs-border, #999);
 	border-bottom-width: 2px;
 	border-radius: 6px 6px 0 0;
 }
 
 .cfs-style--filled .cfs-input:focus {
-	background-color: #ececec;
+	background-color: var(--cfs-filled-bg-focus, #ececec);
 	border-color: transparent;
-	border-bottom-color: #0073aa;
+	border-bottom-color: var(--cfs-accent, #0073aa);
 	box-shadow: none;
 }
 
 .cfs-style--filled .cfs-input:focus-visible {
 	outline: none;
-	border-bottom-color: #0073aa;
+	border-bottom-color: var(--cfs-accent, #0073aa);
 }
 
 /* Floated label: no background strip needed (no top border). */
@@ -168,14 +169,14 @@
 .cfs-style--filled .cfs-input--error,
 .cfs-style--filled .cfs-input[aria-invalid="true"] {
 	border-color: transparent;
-	border-bottom-color: #e53e3e;
+	border-bottom-color: var(--cfs-error, #e53e3e);
 	box-shadow: none;
 }
 
 .cfs-style--filled .cfs-input--error:focus,
 .cfs-style--filled .cfs-input[aria-invalid="true"]:focus {
 	border-color: transparent;
-	border-bottom-color: #c0392b;
+	border-bottom-color: var(--cfs-error-dark, #c0392b);
 }
 
 /* Select. */
@@ -187,17 +188,18 @@
    4. OUTLINED — CONTAINED LABEL
    Full border, label sits inside the border area at the top.
    Input gets extra top padding to accommodate the label text.
+   Icon shifts up alongside the label when focused.
    ============================================================= */
 
 /* Extra top padding on the input for the label. */
 .cfs-style--contained .cfs-input {
-	padding-top: 1.25rem;
+	padding-top: 1.0rem;
 	padding-bottom: 0.35rem;
 }
 
-/* Label resting: same as default placeholder position. */
+/* Label resting. */
 .cfs-style--contained .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
-	top: 0.7rem;
+	top: 1.75rem;
 }
 
 /* Label floated: inside the field at the top, not on the border. */
@@ -206,18 +208,24 @@
 	left: 0.75rem;
 	font-size: 0.7em;
 	font-weight: 600;
-	color: #0073aa;
+	color: var(--cfs-accent, #0073aa);
 	background-color: transparent;
 	padding: 0;
 }
 
 .cfs-style--contained .cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
-	color: #c0392b;
+	color: var(--cfs-error-dark, #c0392b);
 }
 
-/* Icons: adjust for taller input padding. */
+/* Icons: default position (centred in the taller input). */
 .cfs-style--contained .cfs-field--has-icon > svg {
 	top: 1.55rem;
+}
+
+/* Icons: shift up when label is floated (focused). */
+.cfs-style--contained .cfs-field--has-icon.focused > svg {
+	top: 0.25rem;
+	transform: translateY(0);
 }
 
 /* =============================================================
@@ -240,7 +248,7 @@
 	grid-row: 1;
 	font-size: 0.9em;
 	font-weight: 500;
-	color: #444;
+	color: var(--cfs-text-muted, #444);
 	background-color: transparent;
 	padding: 0;
 	max-width: none;
@@ -290,12 +298,12 @@
 	font-size: 0.9em;
 	background-color: transparent;
 	padding: 0;
-	color: #0073aa;
+	color: var(--cfs-accent, #0073aa);
 }
 
 /* Show native placeholder. */
 .cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > .cfs-input::placeholder {
-	color: #aaa;
+	color: var(--cfs-label, #aaa);
 }
 
 /* Stack on mobile. */
