@@ -4,7 +4,7 @@ Tags: contact form, form, submissions, shortcode, modal
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.2
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,7 +34,8 @@ Features:
 * HTML email notifications with Reply-To and configurable recipients
 * CSV export with UTF-8 BOM for correct Excel display
 * Dashboard widget showing the 10 latest submissions with status summary
-* Two built-in style themes (standard / alternative) switchable from Settings
+* Six built-in field input styles (outlined, underline, filled, contained, outlined-top, left-label) switchable from Settings
+* CSS custom properties (`--cfs-accent`, `--cfs-error`, `--cfs-border`, etc.) for easy colour overrides
 * Button styles can be disabled independently of form styles
 * Full internationalisation support (i18n-ready)
 * Agreement field with HTML links support (privacy policy, terms, etc.)
@@ -352,10 +353,25 @@ A badge on the menu item shows the count of unread (`new`) submissions, cached f
 
 === Style Settings ===
 
-**Theme** — choose between two built-in themes:
+**Field style** — choose one of six built-in input styles:
 
-* Standard — blue accent (#0073aa), 4px border radius (default)
-* Alternative — teal accent (#1abc9c), 8px border radius
+* **Outlined (adaptive label)** — default. Full border around the input; label floats up onto the border line when the field receives focus or has a value (Material Design pattern).
+* **Underline** — bottom border only, no box border. Label floats above the line on focus.
+* **Outlined (top aligned label)** — full border; label is static and always visible above the input. Native placeholder is shown inside.
+* **Filled** — shaded background with a bottom accent line; top border hidden. Label floats up on focus.
+* **Outlined (contained label)** — full border; label animates to a small caption inside the top of the input box (never breaks the border line).
+* **Left-aligned label** — label sits to the left of the input in a CSS grid layout. On mobile (< 480 px) it falls back to a stacked layout.
+
+All colors are exposed as CSS custom properties with fallback values, so you can override any color without touching the plugin files:
+
+  .cfs-form-wrap {
+    --cfs-accent:   #1abc9c;
+    --cfs-error:    #e74c3c;
+    --cfs-border:   #ddd;
+    --cfs-btn-bg:   #1abc9c;
+  }
+
+Available variables: `--cfs-accent`, `--cfs-accent-bg`, `--cfs-accent-hover`, `--cfs-error`, `--cfs-error-dark`, `--cfs-error-bg`, `--cfs-border`, `--cfs-text`, `--cfs-label`, `--cfs-bg`, `--cfs-icon`, `--cfs-hint`, `--cfs-legend`, `--cfs-btn-bg`, `--cfs-btn-text`, `--cfs-btn-bg-hover`, `--cfs-filled-bg`, `--cfs-filled-bg-focus`.
 
 **Disable all plugin styles** — remove all front-end CSS (useful when building a custom stylesheet from scratch).
 
@@ -384,6 +400,21 @@ The **Submissions** dashboard widget shows:
   apply_filters( 'cfs_icon_library',     $icons )
 
 == Changelog ==
+
+= 2.2.0 =
+
+* Six field input styles switchable from Settings → Field style: Outlined (adaptive label, default), Underline, Outlined (top aligned), Filled, Outlined (contained label), Left-aligned label. Each style adds a `cfs-style--{name}` modifier class to the form wrapper.
+* New CSS file `cfs-field-styles.css` loaded on demand for non-default styles (no overhead on the default theme).
+* All front-end colours converted to CSS custom properties with fallbacks (`--cfs-accent`, `--cfs-error`, `--cfs-border`, `--cfs-bg`, `--cfs-icon`, `--cfs-btn-bg`, etc.) — override without touching plugin files.
+* Removed `padding-top` shelf from `.cfs-field` — cleaner layout; floating label now sits at `top: 0.85rem` at rest and at `top: -0.375rem` when floated.
+* SVG field icons now use `fill` property instead of `color` with `transition: fill`.
+* Button SVGs use `fill: currentColor` so they inherit the button text colour.
+* `.cfs-error:empty { display: none }` — empty error spans no longer occupy space.
+* `fieldset` wrappers (radio, multicheck) now correctly receive `margin-bottom: 1.25rem` matching other fields.
+* `text` field: HTML block tags (`<p>`, `<ul>`, `<ol>`, `<li>`) now work via bracket notation `{p}…{/p}` in shortcode attributes — avoids `wpautop()` corruption of real HTML tags inside attribute values.
+* `text` field: removed unnecessary inner `cfs-text-content` wrapper div.
+* Dialog: fixed double-close when clicking the `×` button — added `e.stopPropagation()` to prevent the click bubbling up to the backdrop handler.
+* Dialog: `locomotiveToggleScroll()` called (and logged to console) at every open and close event for Locomotive Scroll integration.
 
 = 2.1.0 =
 
