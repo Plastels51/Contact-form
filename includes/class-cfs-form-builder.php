@@ -80,11 +80,12 @@ class CFS_Form_Builder {
 				CFS_VERSION
 			);
 
-			// Alternative theme — loaded after the default to override styles.
-			if ( 'alt' === get_option( 'cfs_style_theme', 'default' ) ) {
+			// Field style variants — loaded after the base to override structural styles.
+			$field_style = get_option( 'cfs_style_theme', 'default' );
+			if ( 'default' !== $field_style ) {
 				wp_enqueue_style(
-					'cfs-form-alt',
-					CFS_PLUGIN_URL . 'assets/css/cfs-form-alt.css',
+					'cfs-field-styles',
+					CFS_PLUGIN_URL . 'assets/css/cfs-field-styles.css',
 					array( 'cfs-form' ),
 					CFS_VERSION
 				);
@@ -98,15 +99,6 @@ class CFS_Form_Builder {
 					array( 'cfs-form' ),
 					CFS_VERSION
 				);
-
-				if ( 'alt' === get_option( 'cfs_style_theme', 'default' ) ) {
-					wp_enqueue_style(
-						'cfs-buttons-alt',
-						CFS_PLUGIN_URL . 'assets/css/cfs-buttons-alt.css',
-						array( 'cfs-buttons' ),
-						CFS_VERSION
-					);
-				}
 			}
 		}
 
@@ -620,6 +612,14 @@ class CFS_Form_Builder {
 		if ( $is_dialog ) {
 			$wrap_class .= ' cfs-form-wrap--dialog';
 		}
+
+		// Field style variant class.
+		$field_style = get_option( 'cfs_style_theme', 'default' );
+		$allowed_styles = array( 'underline', 'outlined-top', 'filled', 'contained', 'left-label' );
+		if ( in_array( $field_style, $allowed_styles, true ) ) {
+			$wrap_class .= ' cfs-style--' . $field_style;
+		}
+
 		if ( ! empty( $atts['class'] ) ) {
 			$wrap_class .= ' ' . $atts['class'];
 		}

@@ -1,0 +1,316 @@
+/* Contact Form Submissions — Field style variants.
+ * Loaded after cfs-form.css. Each variant is scoped to a
+ * modifier class on .cfs-form-wrap: cfs-style--{name}.
+ *
+ * Available styles:
+ *   (default / no class) — Outlined, adaptive floating label
+ *   cfs-style--underline  — Bottom border only
+ *   cfs-style--outlined-top — Outlined, static label above
+ *   cfs-style--filled — Filled background
+ *   cfs-style--contained — Outlined, label inside border
+ *   cfs-style--left-label — Label on the left side
+ *
+ * Rules:
+ *  - All classes prefixed with cfs-.
+ *  - No !important anywhere.
+ */
+
+/* =============================================================
+   1. UNDERLINE
+   Bottom border only, no box border, label floats up.
+   ============================================================= */
+
+.cfs-style--underline .cfs-input {
+	border-top-color: transparent;
+	border-left-color: transparent;
+	border-right-color: transparent;
+	border-radius: 0;
+}
+
+.cfs-style--underline .cfs-input:focus {
+	border-top-color: transparent;
+	border-left-color: transparent;
+	border-right-color: transparent;
+	border-bottom-width: 2px;
+	border-bottom-color: #0073aa;
+	box-shadow: none;
+}
+
+.cfs-style--underline .cfs-input:focus-visible {
+	outline: none;
+	border-bottom-color: #0073aa;
+	box-shadow: 0 2px 0 0 #0073aa;
+}
+
+/* No background strip needed — there is no top border to cut through. */
+.cfs-style--underline .cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	background-color: transparent;
+	padding: 0;
+}
+
+/* Error state. */
+.cfs-style--underline .cfs-input--error,
+.cfs-style--underline .cfs-input[aria-invalid="true"] {
+	border-top-color: transparent;
+	border-left-color: transparent;
+	border-right-color: transparent;
+	border-bottom-color: #e53e3e;
+	box-shadow: none;
+}
+
+.cfs-style--underline .cfs-input--error:focus,
+.cfs-style--underline .cfs-input[aria-invalid="true"]:focus {
+	border-bottom-color: #c0392b;
+	box-shadow: 0 2px 0 0 #c0392b;
+}
+
+/* Select: keep the arrow visible, underline only. */
+.cfs-style--underline .cfs-select {
+	border-radius: 0;
+}
+
+/* =============================================================
+   2. OUTLINED — TOP ALIGNED LABEL
+   Full border around input, label is static above it.
+   ============================================================= */
+
+/* Label becomes a normal block element above the input. */
+.cfs-style--outlined-top .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	position: static;
+	display: block;
+	margin-bottom: 0.35rem;
+	font-size: 0.85em;
+	font-weight: 600;
+	color: #555;
+	background-color: transparent;
+	padding: 0;
+	max-width: none;
+	white-space: normal;
+	overflow: visible;
+	text-overflow: initial;
+	pointer-events: auto;
+	z-index: auto;
+	transition: color 0.15s ease;
+}
+
+/* Focused state: just change the label color. */
+.cfs-style--outlined-top .cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	position: static;
+	top: auto;
+	left: auto;
+	font-size: 0.85em;
+	background-color: transparent;
+	padding: 0;
+	color: #0073aa;
+}
+
+.cfs-style--outlined-top .cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	color: #c0392b;
+}
+
+/* Show native placeholder since label is not a placeholder substitute. */
+.cfs-style--outlined-top .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > .cfs-input::placeholder {
+	color: #aaa;
+}
+
+/* Icons: reposition — label is static so icon aligns to input directly. */
+.cfs-style--outlined-top .cfs-field--has-icon > svg {
+	top: calc(0.85em + 0.35rem + 1.325rem); /* label height + label margin + normal icon offset */
+}
+
+.cfs-style--outlined-top .cfs-field--comment.cfs-field--has-icon > svg {
+	top: calc(0.85em + 0.35rem + 0.75rem);
+}
+
+/* Icon label resting — label is static, no need for icon offset. */
+.cfs-style--outlined-top .cfs-field--has-icon:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.focused) > label {
+	left: auto;
+	max-width: none;
+}
+
+.cfs-style--outlined-top .cfs-field--has-icon.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	left: auto;
+	max-width: none;
+}
+
+/* =============================================================
+   3. FILLED
+   Shaded background, bottom border accent, label floats up.
+   ============================================================= */
+
+.cfs-style--filled .cfs-input {
+	background-color: #f5f5f5;
+	border-color: transparent;
+	border-bottom-color: #999;
+	border-bottom-width: 2px;
+	border-radius: 6px 6px 0 0;
+}
+
+.cfs-style--filled .cfs-input:focus {
+	background-color: #ececec;
+	border-color: transparent;
+	border-bottom-color: #0073aa;
+	box-shadow: none;
+}
+
+.cfs-style--filled .cfs-input:focus-visible {
+	outline: none;
+	border-bottom-color: #0073aa;
+}
+
+/* Floated label: no background strip needed (no top border). */
+.cfs-style--filled .cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	background-color: transparent;
+	padding: 0;
+}
+
+/* Error state. */
+.cfs-style--filled .cfs-input--error,
+.cfs-style--filled .cfs-input[aria-invalid="true"] {
+	border-color: transparent;
+	border-bottom-color: #e53e3e;
+	box-shadow: none;
+}
+
+.cfs-style--filled .cfs-input--error:focus,
+.cfs-style--filled .cfs-input[aria-invalid="true"]:focus {
+	border-color: transparent;
+	border-bottom-color: #c0392b;
+}
+
+/* Select. */
+.cfs-style--filled .cfs-select {
+	border-radius: 6px 6px 0 0;
+}
+
+/* =============================================================
+   4. OUTLINED — CONTAINED LABEL
+   Full border, label sits inside the border area at the top.
+   Input gets extra top padding to accommodate the label text.
+   ============================================================= */
+
+/* Extra top padding on the input for the label. */
+.cfs-style--contained .cfs-input {
+	padding-top: 1.25rem;
+	padding-bottom: 0.35rem;
+}
+
+/* Label resting: same as default placeholder position. */
+.cfs-style--contained .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	top: 0.7rem;
+}
+
+/* Label floated: inside the field at the top, not on the border. */
+.cfs-style--contained .cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	top: 0.2rem;
+	left: 0.75rem;
+	font-size: 0.7em;
+	font-weight: 600;
+	color: #0073aa;
+	background-color: transparent;
+	padding: 0;
+}
+
+.cfs-style--contained .cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+	color: #c0392b;
+}
+
+/* Icons: adjust for taller input padding. */
+.cfs-style--contained .cfs-field--has-icon > svg {
+	top: 1.55rem;
+}
+
+/* =============================================================
+   5. LEFT-ALIGNED LABEL
+   Label on the left, input on the right. Uses CSS grid.
+   ============================================================= */
+
+/* Grid layout for text-input fields. */
+.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) {
+	display: grid;
+	grid-template-columns: minmax(80px, auto) 1fr;
+	align-items: center;
+	gap: 0 1rem;
+}
+
+/* Label becomes a static grid item. */
+.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > label {
+	position: static;
+	grid-column: 1;
+	grid-row: 1;
+	font-size: 0.9em;
+	font-weight: 500;
+	color: #444;
+	background-color: transparent;
+	padding: 0;
+	max-width: none;
+	white-space: nowrap;
+	overflow: visible;
+	text-overflow: initial;
+	pointer-events: auto;
+	z-index: auto;
+	transition: color 0.15s ease;
+}
+
+/* Input takes the second column. */
+.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > .cfs-input {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+/* Error span below the input. */
+.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > .cfs-error {
+	grid-column: 2;
+	grid-row: 2;
+}
+
+/* Hint below the input. */
+.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > .cfs-field-hint {
+	grid-column: 2;
+	grid-row: 3;
+}
+
+/* Icon: adjust for grid (inside input cell). */
+.cfs-style--left-label .cfs-field--has-icon:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > svg {
+	grid-column: 2;
+	grid-row: 1;
+	position: relative;
+	top: auto;
+	left: auto;
+	transform: none;
+	margin-left: 0.75rem;
+	align-self: center;
+}
+
+/* Focused state: just change the label color. */
+.cfs-style--left-label .cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > label {
+	position: static;
+	top: auto;
+	left: auto;
+	font-size: 0.9em;
+	background-color: transparent;
+	padding: 0;
+	color: #0073aa;
+}
+
+/* Show native placeholder. */
+.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > .cfs-input::placeholder {
+	color: #aaa;
+}
+
+/* Stack on mobile. */
+@media (max-width: 479px) {
+	.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) {
+		grid-template-columns: 1fr;
+	}
+
+	.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > label {
+		margin-bottom: 0.35rem;
+	}
+
+	.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > .cfs-input,
+	.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > .cfs-error,
+	.cfs-style--left-label .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.cfs-field--radio):not(.cfs-field--multicheck):not(.cfs-field--text):not(.cfs-field--agreement) > .cfs-field-hint {
+		grid-column: 1;
+	}
+}

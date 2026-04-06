@@ -769,17 +769,35 @@ class CFS_Admin {
 						</td>
 					</tr>
 					<tr>
-						<th><?php esc_html_e( 'Тема оформления', 'contact-form-submissions' ); ?></th>
+						<th><?php esc_html_e( 'Стиль полей', 'contact-form-submissions' ); ?></th>
 						<td>
-							<?php $current_theme = get_option( 'cfs_style_theme', 'default' ); ?>
-							<label style="margin-right: 1.5rem;">
-								<input type="radio" name="cfs_style_theme" value="default" <?php checked( $current_theme, 'default' ); ?>>
-								<?php esc_html_e( 'Стандартная', 'contact-form-submissions' ); ?>
-							</label>
-							<label>
-								<input type="radio" name="cfs_style_theme" value="alt" <?php checked( $current_theme, 'alt' ); ?>>
-								<?php esc_html_e( 'Альтернативная', 'contact-form-submissions' ); ?>
-							</label>
+							<?php $current_style = get_option( 'cfs_style_theme', 'default' ); ?>
+							<fieldset>
+								<label style="display:block;margin-bottom:0.35rem;">
+									<input type="radio" name="cfs_style_theme" value="default" <?php checked( $current_style, 'default' ); ?>>
+									<?php esc_html_e( 'Outlined (адаптивная метка)', 'contact-form-submissions' ); ?>
+								</label>
+								<label style="display:block;margin-bottom:0.35rem;">
+									<input type="radio" name="cfs_style_theme" value="underline" <?php checked( $current_style, 'underline' ); ?>>
+									<?php esc_html_e( 'Underline (подчёркивание)', 'contact-form-submissions' ); ?>
+								</label>
+								<label style="display:block;margin-bottom:0.35rem;">
+									<input type="radio" name="cfs_style_theme" value="outlined-top" <?php checked( $current_style, 'outlined-top' ); ?>>
+									<?php esc_html_e( 'Outlined (метка сверху)', 'contact-form-submissions' ); ?>
+								</label>
+								<label style="display:block;margin-bottom:0.35rem;">
+									<input type="radio" name="cfs_style_theme" value="filled" <?php checked( $current_style, 'filled' ); ?>>
+									<?php esc_html_e( 'Filled (заливка)', 'contact-form-submissions' ); ?>
+								</label>
+								<label style="display:block;margin-bottom:0.35rem;">
+									<input type="radio" name="cfs_style_theme" value="contained" <?php checked( $current_style, 'contained' ); ?>>
+									<?php esc_html_e( 'Outlined (метка внутри)', 'contact-form-submissions' ); ?>
+								</label>
+								<label style="display:block;">
+									<input type="radio" name="cfs_style_theme" value="left-label" <?php checked( $current_style, 'left-label' ); ?>>
+									<?php esc_html_e( 'Метка слева', 'contact-form-submissions' ); ?>
+								</label>
+							</fieldset>
 						</td>
 					</tr>
 					<tr>

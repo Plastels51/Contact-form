@@ -74,16 +74,9 @@
 
 /* ─────────────────────────────────────────────────────────────
    FIELD WRAPPER
-   Padding-top creates the "shelf" above the input where the
-   floated label lands. Its height equals the space we reserve.
    ───────────────────────────────────────────────────────────── */
 .cfs-field {
 	position: relative;
-	/*
-	 * 1.5rem = shelf height.
-	 * Floated label center will align to this value (= input top border).
-	 */
-	padding-top: 1.5rem;
 	margin-bottom: 1.25rem;
 }
 
@@ -91,34 +84,24 @@
 	margin-bottom: 0;
 }
 
-/* Checkbox, select, submit, text and radio do not need the floating-label shelf. */
-.cfs-field--checkbox,
-.cfs-field--select,
-.cfs-field--submit,
-.cfs-field--text,
-.cfs-field--radio {
-	padding-top: 0;
-}
-
 /* ─────────────────────────────────────────────────────────────
    FLOATING LABEL  (input / email / tel / textarea / select)
 
-   Geometry:
-     wrapper padding-top = 1.5rem  → top of input border
-     label floated font-size       = 0.75em → height ≈ 0.75rem
-     label half-height             = 0.375rem
-     floated top = 1.5rem − 0.375rem = 1.125rem
+   Geometry (no shelf — input top border sits at wrapper top):
+     label floated font-size  = 0.75em → height ≈ 0.75rem
+     label half-height        = 0.375rem
+     floated top              = 0 − 0.375rem = −0.375rem
        → label center sits exactly on the input top border
 
    Resting (placeholder-like position):
-     top = wrapper-pt(1.5) + input-border(≈0) + input-pt(0.625) + optical(0.15)
-         ≈ 2.275rem  →  use 2.2rem for a clean value
+     top = border(~0) + input-pt(0.625) + optical(0.1)
+         ≈ 0.725rem  →  use 0.7rem
    ───────────────────────────────────────────────────────────── */
 .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
 	position: absolute;
 
 	/* Resting: visually inside the input, like a placeholder. */
-	top: 2.2rem;
+	top: 0.7rem;
 	left: 0.75rem;
 
 	font-size: 1em;
@@ -155,8 +138,8 @@
 
 /* ── Floated state: focused OR has a value ── */
 .cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
-	/* Center on the input top border: 1.5rem − 0.375rem = 1.125rem. */
-	top: 1.125rem;
+	/* Center on the input top border: 0 − 0.375rem = −0.375rem. */
+	top: -0.375rem;
 	left: calc(0.75rem - 0.2rem); /* compensate for added padding */
 
 	font-size: 0.75em;
@@ -451,17 +434,17 @@ dialog.cfs-form-wrap--dialog::backdrop {
    <select> inside .cfs-field. Styled via parent selector — no
    wrapper span needed.
 
-   Geometry for fields WITH the floating-label shelf (padding-top: 1.5rem):
-     Icon center = shelf (1.5rem) + border (1px) + input-padding-top (0.625rem)
-                   + half line-height (~0.7rem) ≈ 2.825rem
-   Select and other shelf-less fields use top: 50% instead.
+   Geometry (no shelf):
+     Icon center = border (1px) + input-padding-top (0.625rem)
+                   + half line-height (~0.7rem) ≈ 1.325rem
+   Select uses top: 50% instead.
    ───────────────────────────────────────────────────────────── */
 
 /* Icon SVG — positioned inside .cfs-field (position:relative). */
 .cfs-field--has-icon > svg {
 	position: absolute;
 	left: 0.75rem;
-	top: 2.825rem;
+	top: 1.325rem;
 	transform: translateY(-50%);
 
 	width: 1.1rem;
@@ -472,14 +455,14 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	transition: color 0.15s ease;
 }
 
-/* Select has no shelf → centre icon vertically in the select element itself. */
+/* Select: centre icon vertically. */
 .cfs-field--select.cfs-field--has-icon > svg {
 	top: 50%;
 }
 
-/* Textarea (comment): align icon with the top of the text area content, not centred. */
+/* Textarea (comment): align icon with the top of the text area content. */
 .cfs-field--comment.cfs-field--has-icon > svg {
-	top: calc(1.5rem + 0.75rem); /* shelf + input-border + padding-top */
+	top: 0.75rem;
 	transform: translateY(0);
 }
 
