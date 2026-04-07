@@ -543,14 +543,20 @@ class CFS_Form_Builder {
 		foreach ( $clean_tokens as $token ) {
 			$parsed = $this->parse_field_token( $token );
 			if ( 'radio' === $parsed['base'] ) {
-				$opts = (string) $this->get_field_attr( $token, 'radio', 'options', $atts, '' );
+				$opts = (string) $this->get_field_attr( $token, 'radio', 'options', $atts, $atts['radio_options'] ?? '' );
 				if ( '' !== $opts ) {
-					$radio_options_map[ $token ] = $opts;
+					// Store parsed values (not the raw string) so the AJAX handler
+					// never needs to re-parse and comma-escaping works correctly.
+					$radio_options_map[ $token ] = array_keys( $this->parse_options_string( $opts ) );
 				}
 			} elseif ( 'multicheck' === $parsed['base'] ) {
 				$opts = (string) $this->get_field_attr( $token, 'multicheck', 'options', $atts, $atts['multicheck_options'] ?? '' );
 				if ( '' !== $opts ) {
-					$multicheck_options_map[ $token ] = $opts;
+					// sanitize_key() matches what the renderer does to checkbox values.
+					$multicheck_options_map[ $token ] = array_map(
+						'sanitize_key',
+						array_keys( $this->parse_options_string( $opts ) )
+					);
 				}
 			}
 		}

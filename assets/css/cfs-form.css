@@ -409,7 +409,7 @@ dialog.cfs-form-wrap--dialog {
 	/* Appearance. */
 	padding: 2rem 2rem 2.5rem;
 	border: none;
-	border-radius: 8px;
+	border-radius: var(--cfs-container-radius, 8px);
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
 	box-sizing: border-box;
 	background: var(--cfs-bg, #fff);

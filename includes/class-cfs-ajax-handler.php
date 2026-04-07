@@ -277,6 +277,8 @@ class CFS_Ajax_Handler {
 		}
 
 		// ── Radio: value whitelist ─── only registered option values allowed ───
+		// The map stores a pre-parsed array of allowed values (set by CFS_Form_Builder),
+		// so no re-parsing is needed here. Comma-escaping is handled at build time.
 		if ( is_array( $form_config ) && ! empty( $form_config['radio_options_map'] ) ) {
 			$radio_map = (array) $form_config['radio_options_map'];
 			foreach ( $field_data as $field_token => $value ) {
@@ -287,13 +289,7 @@ class CFS_Ajax_Handler {
 				if ( ! isset( $radio_map[ $field_token ] ) ) {
 					continue;
 				}
-				$allowed_vals = array();
-				foreach ( explode( ',', (string) $radio_map[ $field_token ] ) as $opt ) {
-					$parts = explode( ':', trim( $opt ), 2 );
-					if ( 2 === count( $parts ) ) {
-						$allowed_vals[] = trim( $parts[1] );
-					}
-				}
+				$allowed_vals = (array) $radio_map[ $field_token ];
 				if ( ! in_array( $value, $allowed_vals, true ) ) {
 					$error_msg              = __( 'Недопустимое значение.', 'contact-form-submissions' );
 					$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
@@ -312,13 +308,7 @@ class CFS_Ajax_Handler {
 				if ( ! isset( $mcheck_map[ $field_token ] ) ) {
 					continue;
 				}
-				$allowed_vals = array();
-				foreach ( explode( ',', (string) $mcheck_map[ $field_token ] ) as $opt ) {
-					$parts = explode( ':', trim( $opt ), 2 );
-					if ( 2 === count( $parts ) ) {
-						$allowed_vals[] = sanitize_key( trim( $parts[1] ) );
-					}
-				}
+				$allowed_vals = (array) $mcheck_map[ $field_token ];
 				foreach ( explode( ',', $value ) as $selected ) {
 					if ( ! in_array( $selected, $allowed_vals, true ) ) {
 						$error_msg              = __( 'Недопустимое значение.', 'contact-form-submissions' );
