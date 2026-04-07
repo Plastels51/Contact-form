@@ -1357,11 +1357,18 @@ class CFS_Form_Builder {
 	/**
 	 * Parse a "Label:value,Label 2:value2" options string into an associative array.
 	 *
-	 * Supports escaped commas (\,) so option labels that contain a literal
-	 * comma are possible:
-	 *   options="Yes\, please:yes,No:no"
+	 * Supports escaping commas inside labels / values via:
+	 *   - HTML entity &#44; or &comma; — preferred in shortcode attributes because
+	 *     WordPress's shortcode_parse_atts() runs stripcslashes() on every value,
+	 *     which would otherwise strip a plain backslash-comma escape.
+	 *   - Literal \, — works only when calling this method directly from PHP
+	 *     (e.g. in tests) or when the user writes \\, in the shortcode attribute
+	 *     (stripcslashes turns \\ into \, leaving \, for us to parse).
 	 *
-	 * Used by select, radio, and multicheck renderers.
+	 * Examples that all produce label "Yes, please":
+	 *   options="Yes&#44; please:yes,No:no"
+	 *   options="Yes&comma; please:yes,No:no"
+	 *   options="Yes\\, please:yes,No:no"
 	 *
 	 * @param string $raw Raw options string from shortcode attribute.
 	 * @return array<string,string> Associative array of value => label.
@@ -1371,11 +1378,12 @@ class CFS_Form_Builder {
 			return array();
 		}
 
-		// Replace escaped commas with a private-use Unicode placeholder,
-		// split on real commas, then restore.
+		// Replace all supported comma escape markers with a private-use
+		// Unicode placeholder, split on real commas, then restore.
 		$placeholder = "\u{F8FF}";
-		$raw         = str_replace( '\\,', $placeholder, $raw );
-		$result      = array();
+		$raw         = str_replace( array( '&#44;', '&comma;', '\\,' ), $placeholder, $raw );
+
+		$result = array();
 		foreach ( explode( ',', $raw ) as $opt ) {
 			$opt   = str_replace( $placeholder, ',', $opt );
 			$parts = explode( ':', $opt, 2 );
