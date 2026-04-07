@@ -21,7 +21,7 @@
 	background-color: var(--cfs-btn-bg, #0073aa);
 	color: var(--cfs-btn-text, #fff);
 	border: none;
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	font-size: 1em;
 	font-weight: 600;
 	line-height: 1.4;
@@ -78,7 +78,7 @@
 	background-color: var(--cfs-btn-bg, #0073aa);
 	color: var(--cfs-btn-text, #fff);
 	border: none;
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	font-size: 1em;
 	font-weight: 600;
 	line-height: 1.4;

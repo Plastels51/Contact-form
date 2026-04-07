@@ -53,7 +53,7 @@
    ───────────────────────────────────────────────────────────── */
 .cfs-form-message {
 	padding: 0.75rem 1rem;
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	margin-bottom: 1rem;
 	font-size: 0.95em;
 	line-height: 1.5;
@@ -98,7 +98,7 @@
    Resting (placeholder-like position):
      top ≈ 0.85rem — vertically centred within the input
    ───────────────────────────────────────────────────────────── */
-.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
 	position: absolute;
 
 	/* Resting: visually inside the input, like a placeholder. */
@@ -108,7 +108,7 @@
 	font-size: 1em;
 	font-weight: 400;
 	line-height: 1;
-	color: var(--cfs-label, #999);
+	color: var(--cfs-text, #222);
 
 	pointer-events: none;
 	white-space: nowrap;
@@ -123,25 +123,27 @@
 	z-index: 2;
 
 	transition:
-		top             0.18s ease,
-		left            0.18s ease,
-		font-size       0.18s ease,
-		font-weight     0.18s ease,
-		color           0.18s ease,
-		padding         0.18s ease,
-		background-color 0.01s 0.09s linear; /* background snaps mid-transition */
+		top 0.18s ease,
+		left 0.18s ease,
+		font-size 0.18s ease,
+		font-weight 0.18s ease,
+		color 0.18s ease,
+		padding 0.18s ease,
+		background-color 0.01s 0.09s linear;
+	/* background snaps mid-transition */
 }
 
 /* Required asterisk inherits the label's color (gray at rest, blue/red when floated). */
-.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label .cfs-required {
+.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label .cfs-required {
 	color: inherit;
 }
 
 /* ── Floated state: focused OR has a value ── */
-.cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+.cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
 	/* Center on the input top border: 0 − 0.375rem = −0.375rem. */
 	top: -0.375rem;
-	left: calc(0.75rem - 0.2rem); /* compensate for added padding */
+	left: calc(0.75rem - 0.2rem);
+	/* compensate for added padding */
 
 	font-size: 0.75em;
 	font-weight: 600;
@@ -153,7 +155,7 @@
 }
 
 /* Error colour on the floated label. */
-.cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+.cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
 	color: var(--cfs-error-dark, #c0392b);
 }
 
@@ -161,22 +163,21 @@
  * Hide the native placeholder: the floating label replaces it.
  * We only need the placeholder attribute for the phone field focus-seed via JS.
  */
-.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > .cfs-input::placeholder {
+.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>.cfs-input::placeholder {
 	color: transparent;
 	transition: color 0.1s;
 }
 
 /* ─────────────────────────────────────────────────────────────
-   CHECKBOX / AGREEMENT  (card-style, same as radio)
+   CHECKBOX  (card-style, same as radio)
    ───────────────────────────────────────────────────────────── */
-.cfs-field--checkbox .cfs-checkbox-label,
-.cfs-field--agreement .cfs-checkbox-label {
+.cfs-field--checkbox .cfs-checkbox-label {
 	display: flex;
 	align-items: center;
 	gap: 0.6rem;
 	padding: 0.55rem 0.9rem;
 	border: 1px solid var(--cfs-border, #bbb);
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	background-color: var(--cfs-bg, #fff);
 	font-size: 0.9em;
 	font-weight: normal;
@@ -187,16 +188,36 @@
 	-webkit-user-select: none;
 }
 
-.cfs-field--checkbox .cfs-checkbox-label:hover,
-.cfs-field--agreement .cfs-checkbox-label:hover {
+.cfs-field--checkbox .cfs-checkbox-label:hover {
 	border-color: var(--cfs-accent, #0073aa);
 	background-color: var(--cfs-accent-bg, #f0f7fb);
 }
 
-.cfs-field--checkbox .cfs-checkbox-label:has(.cfs-checkbox:checked),
-.cfs-field--agreement .cfs-checkbox-label:has(.cfs-checkbox:checked) {
+.cfs-field--checkbox .cfs-checkbox-label:has(.cfs-checkbox:checked) {
 	border-color: var(--cfs-accent, #0073aa);
 	background-color: var(--cfs-accent-bg, #f0f7fb);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   AGREEMENT  (no border, top margin)
+   ───────────────────────────────────────────────────────────── */
+.cfs-field--agreement {
+	margin-top: 0.5rem;
+}
+
+.cfs-field--agreement .cfs-checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0;
+	border: none;
+	background-color: transparent;
+	font-size: 0.9em;
+	font-weight: normal;
+	line-height: 1.4;
+	cursor: pointer;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .cfs-checkbox {
@@ -215,7 +236,7 @@
 	width: 100%;
 	padding: 0.625rem 0.75rem;
 	border: 1px solid var(--cfs-border, #bbb);
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	font-size: 1em;
 	line-height: 1.4;
 	color: var(--cfs-text, #222);
@@ -287,12 +308,14 @@
 
 /* Number: constrain width to avoid overly wide spinner box. */
 .cfs-field--number .cfs-input {
-	-moz-appearance: textfield; /* Firefox: hide spinner */
+	-moz-appearance: textfield;
+	/* Firefox: hide spinner */
 }
 
 .cfs-field--number .cfs-input::-webkit-inner-spin-button,
 .cfs-field--number .cfs-input::-webkit-outer-spin-button {
-	opacity: 1; /* keep visible — helpful for number fields */
+	opacity: 1;
+	/* keep visible — helpful for number fields */
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -323,9 +346,20 @@
 	font-weight: 600;
 }
 
-.cfs-status--new       { background-color: #e8f4fd; color: #005177; }
-.cfs-status--processed { background-color: #ecf9ee; color: #1e6129; }
-.cfs-status--spam      { background-color: #fff3cd; color: #7a5800; }
+.cfs-status--new {
+	background-color: #e8f4fd;
+	color: #005177;
+}
+
+.cfs-status--processed {
+	background-color: #ecf9ee;
+	color: #1e6129;
+}
+
+.cfs-status--spam {
+	background-color: #fff3cd;
+	color: #7a5800;
+}
 
 /* ─────────────────────────────────────────────────────────────
    RESPONSIVE
@@ -363,10 +397,8 @@
 dialog.cfs-form-wrap--dialog {
 	/* Override browser default centering so we can use our own transform. */
 	position: fixed;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	margin: 0;
+	inset: 0 0 0 0;
+	margin: auto;
 
 	/* Sizing — never exceed viewport. */
 	max-width: min(560px, 90vw);
@@ -375,16 +407,16 @@ dialog.cfs-form-wrap--dialog {
 	overflow-y: auto;
 
 	/* Appearance. */
-	padding: 2rem 1.5rem 1.5rem;
+	padding: 2rem 2rem 2.5rem;
 	border: none;
 	border-radius: 8px;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
 	box-sizing: border-box;
-	background-color: var(--cfs-bg, #fff);
+	background: var(--cfs-bg, #fff);
 }
 
 dialog.cfs-form-wrap--dialog::backdrop {
-	background-color: rgba(0, 0, 0, 0.55);
+	background: rgba(0, 0, 0, 0.55);
 }
 
 /* Close (x) button inside the dialog. */
@@ -397,7 +429,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	padding: 0;
 	background: none;
 	border: 1px solid transparent;
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	font-size: 1.1em;
 	line-height: 1;
 	color: #888;
@@ -447,7 +479,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
    ───────────────────────────────────────────────────────────── */
 
 /* Icon SVG — positioned inside .cfs-field (position:relative). */
-.cfs-field--has-icon > svg {
+.cfs-field--has-icon>svg {
 	position: absolute;
 	left: 0.75rem;
 	top: 1.325rem;
@@ -462,12 +494,12 @@ dialog.cfs-form-wrap--dialog::backdrop {
 }
 
 /* Select: centre icon vertically. */
-.cfs-field--select.cfs-field--has-icon > svg {
+.cfs-field--select.cfs-field--has-icon>svg {
 	top: 50%;
 }
 
 /* Textarea (comment): align icon with the top of the text area content. */
-.cfs-field--comment.cfs-field--has-icon > svg {
+.cfs-field--comment.cfs-field--has-icon>svg {
 	top: 0.75rem;
 	transform: translateY(0);
 }
@@ -482,7 +514,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
  * When icon is present the label starts to the RIGHT of the icon so it
  * acts as a placeholder aligned with the text inside the input.
  */
-.cfs-field--has-icon:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.focused) > label {
+.cfs-field--has-icon:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.focused)>label {
 	left: 2.5rem;
 	max-width: calc(100% - 3rem);
 }
@@ -492,19 +524,19 @@ dialog.cfs-form-wrap--dialog::backdrop {
  * The label escapes the input and floats above the border, so it goes back
  * to the original horizontal position regardless of icon.
  */
-.cfs-field--has-icon.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit) > label {
+.cfs-field--has-icon.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
 	left: calc(0.75rem - 0.2rem);
 	max-width: calc(100% - 1.5rem);
 }
 
 /* Icon turns accent colour when the field is active / focused. */
-.cfs-field--has-icon .cfs-input:focus ~ svg,
-.cfs-field--has-icon.focused > svg {
+.cfs-field--has-icon .cfs-input:focus~svg,
+.cfs-field--has-icon.focused>svg {
 	fill: var(--cfs-accent, #0073aa);
 }
 
 /* Icon turns error colour when the field is invalid. */
-.cfs-field--has-icon.cfs-field--has-error > svg {
+.cfs-field--has-icon.cfs-field--has-error>svg {
 	fill: var(--cfs-error-dark, #c0392b);
 }
 
@@ -576,7 +608,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	gap: 0.6rem;
 	padding: 0.55rem 0.9rem;
 	border: 1px solid var(--cfs-border, #bbb);
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	background-color: var(--cfs-bg, #fff);
 	font-size: 0.95em;
 	line-height: 1.4;
@@ -598,7 +630,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 }
 
 /* Bold text on selected option (sibling selector fallback for older browsers). */
-.cfs-radio:checked + span {
+.cfs-radio:checked+span {
 	font-weight: 600;
 	color: var(--cfs-accent, #0073aa);
 }
@@ -641,7 +673,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	gap: 0.6rem;
 	padding: 0.55rem 0.9rem;
 	border: 1px solid var(--cfs-border, #bbb);
-	border-radius: 4px;
+	border-radius: var(--cfs-radius, 4px);
 	background-color: var(--cfs-bg, #fff);
 	font-size: 0.95em;
 	line-height: 1.4;
@@ -661,7 +693,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	background-color: var(--cfs-accent-bg, #f0f7fb);
 }
 
-.cfs-multicheck-input:checked + span {
+.cfs-multicheck-input:checked+span {
 	font-weight: 600;
 	color: var(--cfs-accent, #0073aa);
 }
