@@ -99,10 +99,91 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   BUTTON ICONS  (.cfs-btn--submit > svg, .cfs-modal-btn > svg)
+   STEP NAV BUTTONS  (.cfs-btn--next, .cfs-btn--back)
+   "Next" inherits the submit button visuals; "Back" is an
+   outlined / subtle variant so the primary action stands out.
+   ───────────────────────────────────────────────────────────── */
+.cfs-btn--next,
+.cfs-btn--back {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.688rem 1.5rem;
+	border-radius: var(--cfs-radius, 4px);
+	font-size: 1em;
+	font-weight: 600;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.cfs-btn--next {
+	background-color: var(--cfs-btn-bg, #0073aa);
+	color: var(--cfs-btn-text, #fff);
+	border: none;
+}
+
+.cfs-btn--next:hover,
+.cfs-btn--next:focus-visible {
+	background-color: var(--cfs-btn-bg-hover, #005c8a);
+	outline: none;
+}
+
+.cfs-btn--back {
+	background-color: transparent;
+	color: var(--cfs-text, #222);
+	border: 1px solid var(--cfs-border, #bbb);
+}
+
+.cfs-btn--back:hover,
+.cfs-btn--back:focus-visible {
+	border-color: var(--cfs-accent, #0073aa);
+	color: var(--cfs-accent, #0073aa);
+	outline: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL CLOSE (×) BUTTON
+   Positioning lives in cfs-form.css (structural). The visual
+   chrome — border, hover, focus ring — lives here so it is
+   disabled together with the rest of the button styles when
+   cfs_disable_btn_styles is enabled.
+   ───────────────────────────────────────────────────────────── */
+.cfs-modal-close {
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--cfs-radius, 4px);
+	font-size: 1.1em;
+	line-height: 1;
+	color: #888;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.cfs-modal-close:hover {
+	color: var(--cfs-text, #222);
+	border-color: #ccc;
+}
+
+.cfs-modal-close:focus-visible {
+	outline: 3px solid var(--cfs-accent, #0073aa);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BUTTON ICONS  (.cfs-btn--submit > svg, .cfs-modal-btn > svg, etc.)
    ───────────────────────────────────────────────────────────── */
 .cfs-btn--submit > svg,
-.cfs-modal-btn > svg {
+.cfs-modal-btn > svg,
+.cfs-btn--next > svg,
+.cfs-btn--back > svg {
 	width: 1.1em;
 	height: 1.1em;
 	flex-shrink: 0;

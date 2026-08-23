@@ -1,217 +1,157 @@
 # Contact Form Submissions
 
-WordPress plugin for flexible contact forms via shortcode. Submissions are saved to a dedicated database table and managed through a built-in admin panel.
+WordPress plugin. A form is a text template you write in the admin: anything in square
+brackets becomes a field, everything else is ordinary HTML. Submissions are stored in a
+dedicated table and managed through a built-in admin panel.
 
 - **Requires WordPress:** 5.0+
 - **Requires PHP:** 7.2+
+- **Version:** 3.0.0
 - **License:** GPLv2 or later
-
----
-
-## Features
-
-- Shortcode `[contact_form]` with fully configurable fields
-- Field types: `name`, `surname`, `patronymic`, `phone`, `email`, `comment`, `select`, `radio`, `checkbox`, `agreement`, `text`, `hidden`
-- Star (`*`) notation to mark required fields inline: `fields="name*,phone*,email"`
-- Indexed field tokens for repeated types: `name_2`, `comment_3`, etc.
-- Dialog / modal mode via native `<dialog>` element
-- SVG icon library for field inputs and buttons — no external dependencies
-- Phone mask (`+7` format) in pure JavaScript — no third-party libraries
-- Floating labels with animation
-- AJAX submission with client-side and server-side validation
-- Spam protection: honeypot fields + form timestamp + rate limiting (5/min, 20/hour per IP)
-- Admin panel: list view, filters, sorting, bulk actions, detail view (postbox layout)
-- HTML email notifications with `Reply-To` and configurable recipients
-- CSV export with UTF-8 BOM for correct Excel display
-- Dashboard widget with submission counters and latest entries
-- Full i18n support
 
 ---
 
 ## Installation
 
-1. Upload the `contact-form` folder to `/wp-content/plugins/` and rename it to `contact-form-submissions`
-2. Activate via **Plugins** in the WordPress admin
-3. Add `[contact_form]` to any page or post
+1. Upload the `contact-form` folder to `/wp-content/plugins/` and rename it to
+   `contact-form-submissions`.
+2. Activate the plugin.
+3. **Submissions → Forms → Add form**, then paste the shortcode into a page.
+
+Upgrading from 2.x? Existing `[contact_form fields="…"]` shortcodes keep working.
+**Submissions → Migration** converts them into editable forms and explains how to drop
+the compatibility module afterwards.
 
 ---
 
-## Shortcode Usage
+## The template
 
-### Basic
+```html
+<p>Leave a request — we call back within 15 minutes.</p>
 
-```
-[contact_form]
+<div class="cfs-row">
+	[name* first_name label="Name" icon="user" width="1/2"]
+	[phone* phone label="Phone" icon="phone" width="1/2"]
+</div>
 
-[contact_form fields="name*,phone*,email" title="Contact us"]
-```
-
-### Required fields via star notation
-
-```
-[contact_form fields="name*,phone*,email,comment"]
-```
-
-### Select field
-
-```
-[contact_form fields="name*,phone*,select*"
-  select_label="Topic"
-  select_options="Support:support,Sales:sales,Other:other"]
+[select* topic label="Subject" options="Consultation:consult,Quote:calc"]
+[textarea comment label="Message" rows="4"]
+[agreement* consent label="I agree to the <a href='/privacy/'>privacy policy</a>"]
+[hidden utm_source source="query:utm_source"]
+[submit "Send" icon_after="arrow-right"]
 ```
 
-### Radio button group
+Render it with:
 
 ```
-[contact_form fields="name*,phone*,radio"
-  radio_label="Have you volunteered before?"
-  radio_options="Yes:yes,No:no"]
+[contact_form id="12"]
+[contact_form slug="callback"]
+[contact_form id="12" class="my-form"]
 ```
 
-### Modal / dialog mode
+### Tag syntax
 
 ```
-[contact_form container="dialog"
-  modal_button_text="Request a call"
-  modal_button_icon_after="phone"
-  fields="name*,phone*"]
+[type* name attribute="value"]
 ```
 
-### Field and button icons
-
-```
-[contact_form fields="name*,phone*,email"
-  name_icon="user"
-  phone_icon="phone"
-  email_icon="email"
-  button_icon_after="arrow"]
-```
-
-### Agreement field
-
-```
-[contact_form fields="name*,phone*,agreement*"
-  agreement_label="I agree to the <a href='/privacy'>Privacy Policy</a>"]
-```
-
-### Hidden fields (UTM)
-
-```
-[contact_form fields="name*,phone*,hidden"
-  hidden_name="utm_source"
-  hidden_value="google"]
-```
-
-### Redirect after submission
-
-```
-[contact_form success_message="Thank you!" redirect_url="/thank-you/" redirect_delay="3"]
-```
-
-### Multiple forms on one page
-
-```
-[contact_form form_id="form_main" title="Main form"]
-[contact_form form_id="form_quick" fields="name*,phone*" button_text="Call me back"]
-```
-
----
-
-## Shortcode Parameters
-
-| Parameter | Default | Description |
-|---|---|---|
-| `form_id` | auto | Unique form identifier |
-| `title` | — | Heading displayed above the form |
-| `fields` | `name,phone,email` | Comma-separated field tokens. Append `*` to mark required. |
-| `button_text` | `Send` | Submit button label |
-| `button_icon_before` | — | Icon key before submit button label |
-| `button_icon_after` | — | Icon key after submit button label |
-| `class` | — | Extra CSS class on the form wrapper |
-| `success_message` | `Thank you! We will be in touch.` | Message after successful submission |
-| `redirect_url` | — | URL to redirect to after submission |
-| `redirect_delay` | `2` | Redirect delay in seconds |
-| `container` | `div` | `div` for inline, `dialog` for modal mode |
-| `modal_button_text` | `Open form` | Label of the modal trigger button |
-| `modal_button_icon_before` | — | Icon key before modal trigger label |
-| `modal_button_icon_after` | — | Icon key after modal trigger label |
-
-### Per-field attributes
-
-Pattern: `{field_token}_{attr}` — e.g. `name_label`, `comment_2_required`, `phone_icon`.
-
-| Attribute | Description |
+| Part | Meaning |
 |---|---|
-| `{field}_label` | Field label text |
-| `{field}_required` | `yes` or `no` |
-| `{field}_placeholder` | Placeholder text |
-| `{field}_icon` | Icon key from the built-in library |
+| `type` | the field type — see below |
+| `*` | the field is required |
+| `name` | latin letters, digits, `-` and `_`; omit it and one is generated |
+| `attribute="value"` | named, any order; the value may contain spaces and brackets |
+
+`[# comment]` renders nothing. `\[` is a literal bracket.
+
+### Field types
+
+| Type | Notes |
+|---|---|
+| `text`, `name`, `surname`, `patronymic` | single-line text; the last three validate as names |
+| `email`, `phone`, `url` | format-checked; phone gets the `+7 (___) ___-__-__` mask |
+| `number`, `date` | `min`, `max`, `step` |
+| `textarea` | `rows`, `maxlength` |
+| `select`, `radio`, `multicheck` | `options="Label:value,Label 2:value2"` |
+| `checkbox`, `agreement` | agreement labels may contain a link |
+| `hidden` | `value`, or `source="query:utm_source"` / `cookie:` / `page:` / `user:` |
+| `submit` | `text`, `icon_before`, `icon_after`, `class` |
+| `step` | splits the form into a wizard; `label` names the step |
+
+Common attributes: `label`, `placeholder`, `default`, `class`, `icon`, `help`, `error`,
+`role`, `width` (`1/2`, `1/3`, `2/3`, `1/4`, `3/4`, inside a `.cfs-row` wrapper).
 
 ---
 
-## Icon Library
+## After a submission
 
-Built-in keys: `user`, `phone`, `email`, `comment`, `select`, `company`, `location`, `calendar`, `lock`, `link`, `search`, `star`.
+| Tab | What it does |
+|---|---|
+| **After submit** | message, redirect or both; clear the form; close the modal; custom error texts |
+| **Mail** | notification and auto-reply, each with recipients, subject, body and `{field}` substitutions |
+| **Integrations** | every installed add-on, enabled per form, with its own settings and field mapping |
 
-Add custom icons via filter:
+Mail substitutions: `{field_name}`, `{field_name_label}`, `{all_fields}`, `{site_name}`,
+`{form_title}`, `{submission_id}`, `{admin_url}`, `{date}`, `{ip}`, `{page_url}`.
+
+---
+
+## Features
+
+- Template-driven forms with your own HTML around the fields
+- Tag generator, live preview and template history in the editor
+- Form export/import as JSON — move a form between sites
+- Multi-step wizard and native `<dialog>` modal mode
+- SVG icon library, floating labels, six field style variants
+- AJAX submission with matching client- and server-side validation
+- Spam protection: nonce, two honeypots, timestamp window, referer check, per-IP rate
+  limiting, banned words, and a strict field whitelist
+- Submissions list with filters, bulk actions and a detail card built from the schema
+  stored inside each submission
+- CSV export with one column per field, UTF-8 BOM, formula injection neutralised
+- Dashboard widget, per-submission action log
+- No third-party JavaScript: the phone mask, modal and wizard are plain JS
+
+---
+
+## For developers
+
+An integration registers itself once and the core does the rest — settings card,
+sanitising, execution after save, retries and logging:
 
 ```php
-add_filter( 'cfs_icon_library', function( $icons ) {
-    $icons['arrow'] = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" ...>...</svg>';
-    return $icons;
+add_filter( 'cfs_integrations', function ( array $items ): array {
+	$items['my_crm'] = array(
+		'label'    => 'My CRM',
+		'fields'   => array(
+			'webhook_url' => array( 'type' => 'url', 'label' => 'Webhook', 'required' => true ),
+			'map'         => array(
+				'type'    => 'field_map',
+				'label'   => 'Field mapping',
+				'targets' => array( 'PHONE' => 'Phone', 'EMAIL' => 'Email' ),
+			),
+		),
+		'run'      => function ( array $data, array $settings, int $submission_id ) {
+			// … deliver …
+			return CFS_Action_Result::success( 'Lead #500 created' );
+		},
+		'deferred' => true,
+	);
+
+	return $items;
 } );
 ```
 
-SVG requirements: `width="20" height="20"`, `fill="none" stroke="currentColor"`, `aria-hidden="true" focusable="false"`.
+A custom field type is a descriptor on `cfs_field_types`; a custom icon is one entry on
+`cfs_icon_library`. The full hook list is on **Submissions → Help**.
 
 ---
 
-## Developer Hooks
+## Tests
 
-```php
-apply_filters( 'cfs_before_save',      $data, $form_id )
-do_action(    'cfs_after_save',         $submission_id, $data )
-apply_filters( 'cfs_validate_field',   $error, $field, $value, $form_id )
-apply_filters( 'cfs_email_recipients', $recipients, $data )
-apply_filters( 'cfs_email_headers',    $headers, $data )
-apply_filters( 'cfs_email_body',       $body, $data )
-apply_filters( 'cfs_form_fields',      $fields, $form_id, $atts )
-apply_filters( 'cfs_rate_limit',       $is_limited, $ip, $form_id )
-apply_filters( 'cfs_spam_check',       $is_spam, $data, $form_id )
-apply_filters( 'cfs_success_response', $response, $data )
-apply_filters( 'cfs_form_html',        $html, $form_id, $atts )
-apply_filters( 'cfs_icon_library',     $icons )
+The suites run inside a real WordPress, so kses, `sanitize_*()` and `wp_mail()` behave
+exactly as they do in production:
+
+```bash
+docker compose exec -T wordpress php -r "define('DOING_AJAX', true); define('WP_ADMIN', true); define('WP_USE_THEMES', false); require '/var/www/html/wp-load.php'; require '/var/www/html/wp-content/plugins/contact-form/tests/run-all.php';"
 ```
-
----
-
-## Admin Panel
-
-**Submissions → All Submissions** — filterable list (status, form_id), bulk actions (mark processed / spam / delete), sortable, paginated at 20 per page. Menu badge shows count of unread submissions.
-
-**Submissions → Settings** — extra email recipients, email subject template, banned words, IP/UA saving, plugin styles toggle, agreement field text, debug mode.
-
----
-
-## Changelog
-
-### 2.1.0
-- `radio` field type: card-style radio button group with `<fieldset>`/`<legend>` accessibility
-- `text` field type: display-only content block with HTML support
-- `button_icon_before` / `button_icon_after` for submit and modal trigger buttons
-- Indexed variants support for `radio` and `text` field types
-
-### 2.0.0
-- Full rewrite with Singleton architecture and WordPress Coding Standards
-- Dynamic indexed field tokens (`name_2`, `comment_3*`, etc.)
-- Star (`*`) notation in the `fields` attribute
-- Form config cached via transients for AJAX validation
-- Dialog / modal mode using native `<dialog>` element
-- Agreement field with HTML link support
-- SVG icon library with `cfs_icon_library` filter
-- Floating label animation
-- Phone mask with cursor-position tracking (pure JS)
-- Rate-limiting table (5/min, 20/hour per IP)
-- CSV export with UTF-8 BOM
-- Dashboard widget
-- Full i18n support

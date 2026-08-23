@@ -24,12 +24,48 @@ class CFS_Admin {
 	private $db;
 
 	/**
+	 * Hook suffixes returned by add_menu_page()/add_submenu_page().
+	 *
+	 * Collected at registration time rather than hard-coded: WordPress derives
+	 * submenu hooks from sanitize_title() of the PARENT menu title, which here
+	 * is Cyrillic and carries the "new submissions" badge — so the value is
+	 * neither guessable nor stable.
+	 *
+	 * @var array<int, string>
+	 */
+	private $page_hooks = array();
+
+	/**
+	 * Forms list screen.
+	 *
+	 * @var CFS_Admin_Forms
+	 */
+	private $forms;
+
+	/**
+	 * Form editor screen.
+	 *
+	 * @var CFS_Admin_Form_Editor
+	 */
+	private $editor;
+
+	/**
+	 * Hook suffixes of the two form screens, which load the editor assets.
+	 *
+	 * @var array<int, string>
+	 */
+	private $form_hooks = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CFS_DB $db DB instance.
 	 */
 	public function __construct( CFS_DB $db ) {
-		$this->db = $db;
+		$this->db     = $db;
+		$this->forms  = new CFS_Admin_Forms( $db );
+		$this->editor = new CFS_Admin_Form_Editor();
+
 		add_action( 'admin_menu', array( $this, 'register_menus' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_init', array( $this, 'handle_bulk_actions' ) );
@@ -37,7 +73,6 @@ class CFS_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		// AJAX status update.
 		add_action( 'wp_ajax_cfs_update_status', array( $this, 'ajax_update_status' ) );
-		add_action( 'wp_ajax_cfs_delete_submission', array( $this, 'ajax_delete_submission' ) );
 	}
 
 	/**
@@ -46,35 +81,61 @@ class CFS_Admin {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue_assets( string $hook ): void {
-		$pages = array( 'toplevel_page_cfs-submissions', 'zajavki_page_cfs-settings', 'zajavki_page_cfs-help' );
-		if ( ! in_array( $hook, $pages, true ) ) {
+		if ( ! in_array( $hook, $this->page_hooks, true ) ) {
 			return;
 		}
 
 		wp_enqueue_style(
 			'cfs-admin',
-			CFS_PLUGIN_URL . 'assets/css/cfs-form.css',
+			CFS_PLUGIN_URL . 'assets/css/cfs-admin.css',
 			array(),
 			CFS_VERSION
 		);
 
 		wp_enqueue_script(
 			'cfs-admin',
-			CFS_PLUGIN_URL . 'assets/js/cfs-form.js',
-			array( 'jquery' ),
+			CFS_PLUGIN_URL . 'assets/js/cfs-admin.js',
+			array(),
 			CFS_VERSION,
 			true
 		);
 
 		wp_localize_script(
 			'cfs-admin',
-			'cfsAdmin',
+			'cfsAdminData',
 			array(
-				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-				'nonce'         => wp_create_nonce( 'cfs_admin_action' ),
-				'confirmDelete' => __( 'Удалить эту заявку? Действие необратимо.', 'contact-form-submissions' ),
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'cfs_admin_action' ),
+				'i18n'    => array(
+					'networkError' => __( 'Ошибка сети.', 'contact-form-submissions' ),
+				),
 			)
 		);
+
+		if ( ! in_array( $hook, $this->form_hooks, true ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'cfs-editor',
+			CFS_PLUGIN_URL . 'assets/css/cfs-editor.css',
+			array( 'cfs-admin' ),
+			CFS_VERSION
+		);
+
+		// The preview renders a real form, so it needs the real front-end CSS.
+		wp_enqueue_style( 'cfs-form', CFS_PLUGIN_URL . 'assets/css/cfs-form.css', array(), CFS_VERSION );
+		wp_enqueue_style( 'cfs-buttons', CFS_PLUGIN_URL . 'assets/css/cfs-buttons.css', array( 'cfs-form' ), CFS_VERSION );
+
+		wp_enqueue_script(
+			'cfs-form-editor',
+			CFS_PLUGIN_URL . 'assets/js/cfs-form-editor.js',
+			array(),
+			CFS_VERSION,
+			true
+		);
+
+		wp_localize_script( 'cfs-form-editor', 'cfsEditor', CFS_Admin_Form_Editor::script_data() );
 	}
 
 	/**
@@ -86,7 +147,7 @@ class CFS_Admin {
 			? ' <span class="awaiting-mod">' . number_format_i18n( $new_count ) . '</span>'
 			: '';
 
-		add_menu_page(
+		$this->page_hooks[] = add_menu_page(
 			__( 'Заявки', 'contact-form-submissions' ),
 			__( 'Заявки', 'contact-form-submissions' ) . $badge,
 			'manage_options',
@@ -96,7 +157,7 @@ class CFS_Admin {
 			30
 		);
 
-		add_submenu_page(
+		$this->page_hooks[] = add_submenu_page(
 			'cfs-submissions',
 			__( 'Все заявки', 'contact-form-submissions' ),
 			__( 'Все заявки', 'contact-form-submissions' ),
@@ -105,7 +166,45 @@ class CFS_Admin {
 			array( $this, 'page_submissions' )
 		);
 
-		add_submenu_page(
+		$forms_hook = add_submenu_page(
+			'cfs-submissions',
+			__( 'Формы', 'contact-form-submissions' ),
+			__( 'Формы', 'contact-form-submissions' ),
+			CFS_Post_Type::capability(),
+			'cfs-forms',
+			array( $this->forms, 'render' )
+		);
+
+		/*
+		 * The editor has no menu entry — reached only from the forms list, and
+		 * a second "Формы" item would just be noise. Registering it with a
+		 * null parent is the pattern WordPress itself expects for this: the
+		 * page still passes user_can_access_admin_page().
+		 *
+		 * Registering it as a normal submenu and then hiding the item with
+		 * remove_submenu_page() looks equivalent but is not: that call only
+		 * edits the $submenu global used to draw the sidebar. WordPress's own
+		 * access check (wp-admin/includes/plugin.php) determines the page's
+		 * parent by searching that SAME $submenu array for the page's slug —
+		 * once the entry is gone, the search finds nothing, the parent
+		 * resolves to '', the hookname computed from it no longer matches the
+		 * one recorded at registration, and every visitor is turned away with
+		 * "Sorry, you are not allowed to access this page." regardless of
+		 * their capabilities.
+		 */
+		$editor_hook = add_submenu_page(
+			null,
+			__( 'Редактирование формы', 'contact-form-submissions' ),
+			__( 'Редактирование формы', 'contact-form-submissions' ),
+			CFS_Post_Type::capability(),
+			'cfs-form',
+			array( $this->editor, 'render' )
+		);
+
+		$this->form_hooks   = array_filter( array( $forms_hook, $editor_hook ) );
+		$this->page_hooks   = array_merge( $this->page_hooks, $this->form_hooks );
+
+		$this->page_hooks[] = add_submenu_page(
 			'cfs-submissions',
 			__( 'Настройки', 'contact-form-submissions' ),
 			__( 'Настройки', 'contact-form-submissions' ),
@@ -114,7 +213,7 @@ class CFS_Admin {
 			array( $this, 'page_settings' )
 		);
 
-		add_submenu_page(
+		$this->page_hooks[] = add_submenu_page(
 			'cfs-submissions',
 			__( 'Помощь', 'contact-form-submissions' ),
 			__( 'Помощь', 'contact-form-submissions' ),
@@ -122,6 +221,8 @@ class CFS_Admin {
 			'cfs-help',
 			array( $this, 'page_help' )
 		);
+
+		$this->page_hooks = array_filter( $this->page_hooks );
 	}
 
 	/**
@@ -142,6 +243,22 @@ class CFS_Admin {
 			'cfs_agreement_text',
 			array( 'sanitize_callback' => array( $this, 'sanitize_agreement_text' ) )
 		);
+		register_setting(
+			'cfs_settings_group',
+			'cfs_max_comment_length',
+			array( 'sanitize_callback' => array( $this, 'sanitize_max_comment_length' ) )
+		);
+	}
+
+	/**
+	 * Sanitize the maximum comment length.
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return int
+	 */
+	public function sanitize_max_comment_length( $value ): int {
+		$value = (int) $value;
+		return $value > 0 ? min( $value, 65000 ) : 1000;
 	}
 
 	/**
@@ -231,31 +348,6 @@ class CFS_Admin {
 	}
 
 	/**
-	 * AJAX handler: delete submission.
-	 */
-	public function ajax_delete_submission(): void {
-		check_ajax_referer( 'cfs_admin_action', 'nonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Нет прав.', 'contact-form-submissions' ) ) );
-			return;
-		}
-
-		$id = isset( $_POST['id'] ) ? (int) $_POST['id'] : 0;
-		if ( ! $id ) {
-			wp_send_json_error( array( 'message' => __( 'Неверный ID.', 'contact-form-submissions' ) ) );
-			return;
-		}
-
-		$result = $this->db->delete_submission( $id );
-		if ( $result ) {
-			wp_send_json_success( array( 'message' => __( 'Заявка удалена.', 'contact-form-submissions' ) ) );
-		} else {
-			wp_send_json_error( array( 'message' => __( 'Ошибка удаления.', 'contact-form-submissions' ) ) );
-		}
-	}
-
-	/**
 	 * Render the submissions list/detail page.
 	 */
 	public function page_submissions(): void {
@@ -300,18 +392,36 @@ class CFS_Admin {
 		);
 
 		$submissions = $this->db->get_submissions( $args );
-		$total       = $this->db->count_submissions( array(
-			'status'  => $status_filter,
-			'form_id' => $form_id_filter,
-		) );
 
-		$count_all       = $this->db->count_submissions();
-		$count_new       = $this->db->count_submissions( array( 'status' => 'new' ) );
-		$count_processed = $this->db->count_submissions( array( 'status' => 'processed' ) );
-		$count_spam      = $this->db->count_submissions( array( 'status' => 'spam' ) );
+		// One GROUP BY replaces the four separate COUNT(*) queries this used to run.
+		$counts          = $this->db->count_all_by_status( $form_id_filter );
+		$count_all       = $counts['all'];
+		$count_new       = $counts['new'];
+		$count_processed = $counts['processed'];
+		$count_spam      = $counts['spam'];
+
+		$total = '' === $status_filter ? $count_all : ( $counts[ $status_filter ] ?? 0 );
 
 		$total_pages = (int) ceil( $total / 20 );
 		$form_ids    = $this->db->get_form_ids();
+
+		/*
+		 * form_id is a post ID for 3.x submissions and a hashed slug for 2.x
+		 * ones, so the filter and the column both resolve it to a title where
+		 * they can and fall back to the raw value where they cannot.
+		 */
+		$form_titles = array();
+		foreach ( $form_ids as $known_id ) {
+			$known_form = ctype_digit( (string) $known_id ) ? CFS_Form::load( (int) $known_id ) : null;
+
+			$form_titles[ (string) $known_id ] = $known_form
+				? $known_form->get_title()
+				: sprintf(
+					/* translators: %s: legacy form identifier */
+					__( '%s (форма 2.x)', 'contact-form-submissions' ),
+					(string) $known_id
+				);
+		}
 
 		$export_url = wp_nonce_url(
 			add_query_arg(
@@ -336,6 +446,8 @@ class CFS_Admin {
 				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Действие выполнено.', 'contact-form-submissions' ); ?></p></div>
 			<?php endif; ?>
 
+			<?php $this->render_list_notices(); ?>
+
 			<!-- Stats -->
 			<ul class="subsubsub">
 				<li><a href="<?php echo esc_url( $base_url ); ?>" <?php echo '' === $status_filter ? 'class="current"' : ''; ?>><?php esc_html_e( 'Все', 'contact-form-submissions' ); ?> <span class="count">(<?php echo (int) $count_all; ?>)</span></a> |</li>
@@ -353,7 +465,7 @@ class CFS_Admin {
 				<select name="form_id">
 					<option value=""><?php esc_html_e( '— Все формы —', 'contact-form-submissions' ); ?></option>
 					<?php foreach ( $form_ids as $fid ) : ?>
-						<option value="<?php echo esc_attr( $fid ); ?>" <?php selected( $form_id_filter, $fid ); ?>><?php echo esc_html( $fid ); ?></option>
+						<option value="<?php echo esc_attr( $fid ); ?>" <?php selected( $form_id_filter, $fid ); ?>><?php echo esc_html( $form_titles[ (string) $fid ] ?? $fid ); ?></option>
 					<?php endforeach; ?>
 				</select>
 				<?php submit_button( __( 'Фильтр', 'contact-form-submissions' ), 'secondary', '', false ); ?>
@@ -399,19 +511,8 @@ class CFS_Admin {
 					<?php else : ?>
 						<?php foreach ( $submissions as $row ) : ?>
 							<?php
-							$form_data = array();
-							if ( ! empty( $row->form_data_json ) ) {
-								$decoded   = json_decode( $row->form_data_json, true );
-								$form_data = is_array( $decoded ) ? $decoded : array();
-							}
-							$full_name = trim( implode( ' ', array_filter( array(
-								$form_data['surname'] ?? '',
-								$row->name ?? '',
-								$form_data['patronymic'] ?? '',
-							) ) ) );
-							if ( empty( $full_name ) ) {
-								$full_name = '—';
-							}
+							$item      = CFS_Submission::from_row( $row );
+							$full_name = $item->get_display_name();
 							$view_url   = admin_url( 'admin.php?page=cfs-submissions&action=view&id=' . (int) $row->id );
 							$delete_url = wp_nonce_url(
 								admin_url( 'admin.php?page=cfs-submissions&action=delete&id=' . (int) $row->id ),
@@ -424,9 +525,9 @@ class CFS_Admin {
 								</th>
 								<td><?php echo (int) $row->id; ?></td>
 								<td><a href="<?php echo esc_url( $view_url ); ?>"><?php echo esc_html( $full_name ); ?></a></td>
-								<td><?php echo esc_html( $row->phone ?? '—' ); ?></td>
-								<td><?php echo esc_html( $row->email ?? '—' ); ?></td>
-								<td><?php echo esc_html( $row->form_id ); ?></td>
+								<td><?php echo esc_html( '' !== (string) $row->phone ? $row->phone : '—' ); ?></td>
+								<td><?php echo esc_html( '' !== (string) $row->email ? $row->email : '—' ); ?></td>
+								<td><?php echo esc_html( $form_titles[ (string) $row->form_id ] ?? (string) $row->form_id ); ?></td>
 								<td><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $row->submitted_at ) ); ?></td>
 								<td>
 									<span class="cfs-status cfs-status--<?php echo esc_attr( $row->status ); ?>">
@@ -453,18 +554,6 @@ class CFS_Admin {
 				</div>
 			</form>
 		</div>
-
-		<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			var selectAll = document.getElementById('cfs-select-all');
-			if (selectAll) {
-				selectAll.addEventListener('change', function() {
-					var boxes = document.querySelectorAll('input[name="submission_ids[]"]');
-					boxes.forEach(function(box) { box.checked = selectAll.checked; });
-				});
-			}
-		});
-		</script>
 		<?php
 	}
 
@@ -480,11 +569,16 @@ class CFS_Admin {
 			return;
 		}
 
-		$form_data = array();
-		if ( ! empty( $submission->form_data_json ) ) {
-			$decoded   = json_decode( $submission->form_data_json, true );
-			$form_data = is_array( $decoded ) ? $decoded : array();
-		}
+		/*
+		 * Everything the card shows comes from the submission itself, through
+		 * CFS_Submission: a row written by 2.x and one written by 3.x arrive
+		 * here in the same shape, and neither depends on the form still
+		 * existing — or on a cache entry that has long expired.
+		 */
+		$item           = CFS_Submission::from_row( $submission );
+		$contact_fields = $item->get_contact_fields();
+		$data_fields    = $item->get_data_fields();
+		$hidden_fields  = $item->get_hidden_fields();
 
 		$list_url   = admin_url( 'admin.php?page=cfs-submissions' );
 		$delete_url = wp_nonce_url(
@@ -492,32 +586,10 @@ class CFS_Admin {
 			'cfs_delete_' . $id
 		);
 
-		/*
-		 * Collect extra fields from form_data_json, splitting them into
-		 * contact info (name/surname/patronymic/phone/email indexed variants)
-		 * and other form fields. Skip agreement/checkbox — not useful in detail view.
-		 */
-		$extra_contact = array();
-		$extra_fields  = array();
-		$skip_bases    = array( 'agreement', 'checkbox', 'hidden' );
-
-		if ( ! empty( $form_data['extra'] ) && is_array( $form_data['extra'] ) ) {
-			foreach ( $form_data['extra'] as $extra_key => $extra_value ) {
-				if ( '' === (string) $extra_value ) {
-					continue;
-				}
-				$base_type = (string) preg_replace( '/(_\d+)$/', '', $extra_key );
-				if ( in_array( $base_type, $skip_bases, true ) ) {
-					continue;
-				}
-				$contact_bases = array( 'name', 'surname', 'patronymic', 'phone', 'email' );
-				if ( in_array( $base_type, $contact_bases, true ) ) {
-					$extra_contact[ $extra_key ] = (string) $extra_value;
-				} else {
-					$extra_fields[ $extra_key ] = (string) $extra_value;
-				}
-			}
-		}
+		$form_post_id = $item->get_form_post_id();
+		$form_edit_url = $form_post_id > 0 && class_exists( 'CFS_Admin_Forms' )
+			? CFS_Admin_Forms::edit_url( $form_post_id )
+			: '';
 		?>
 		<div class="wrap cfs-admin-wrap">
 			<h1>
@@ -532,84 +604,33 @@ class CFS_Admin {
 				<a href="<?php echo esc_url( $delete_url ); ?>" class="button button-link-delete" onclick="return confirm('<?php esc_attr_e( 'Удалить эту заявку?', 'contact-form-submissions' ); ?>')"><?php esc_html_e( 'Удалить', 'contact-form-submissions' ); ?></a>
 			</p>
 
-			<div id="poststuff">
-				<div id="post-body" class="metabox-holder columns-2">
+			<div class="cfs-detail-body">
 
-					<!-- ═══ Main column ═══ -->
-					<div id="post-body-content">
+				<!-- ═══ Main column ═══ -->
+				<div class="cfs-detail-main">
 
 						<!-- ── Section: Applicant info ── -->
+						<?php if ( ! empty( $contact_fields ) ) : ?>
 						<div class="postbox">
 							<h2 class="hndle"><span><?php esc_html_e( 'Заявитель', 'contact-form-submissions' ); ?></span></h2>
 							<div class="inside">
-								<table class="form-table" style="margin-top:0;">
-									<?php if ( ! empty( $form_data['surname'] ) ) : ?>
+								<table class="form-table">
+									<?php foreach ( $contact_fields as $field ) : ?>
 									<tr>
-										<th><?php esc_html_e( 'Фамилия', 'contact-form-submissions' ); ?></th>
-										<td><?php echo esc_html( $form_data['surname'] ); ?></td>
-									</tr>
-									<?php endif; ?>
-									<tr>
-										<th><?php esc_html_e( 'Имя', 'contact-form-submissions' ); ?></th>
-										<td><?php echo esc_html( $submission->name ?? '—' ); ?></td>
-									</tr>
-									<?php if ( ! empty( $form_data['patronymic'] ) ) : ?>
-									<tr>
-										<th><?php esc_html_e( 'Отчество', 'contact-form-submissions' ); ?></th>
-										<td><?php echo esc_html( $form_data['patronymic'] ); ?></td>
-									</tr>
-									<?php endif; ?>
-									<tr>
-										<th><?php esc_html_e( 'Телефон', 'contact-form-submissions' ); ?></th>
+										<th><?php echo esc_html( $field['label'] ); ?></th>
 										<td>
-											<?php if ( $submission->phone ) : ?>
-												<a href="tel:<?php echo esc_attr( $submission->phone ); ?>"><?php echo esc_html( $submission->phone ); ?></a>
+											<?php if ( '' !== (string) $field['display'] ) : ?>
+												<?php if ( 'phone' === $field['type'] ) : ?>
+													<a href="tel:<?php echo esc_attr( (string) $field['value'] ); ?>"><?php echo esc_html( (string) $field['display'] ); ?></a>
+												<?php elseif ( 'email' === $field['type'] ) : ?>
+													<a href="mailto:<?php echo esc_attr( (string) $field['display'] ); ?>"><?php echo esc_html( (string) $field['display'] ); ?></a>
+												<?php else : ?>
+													<?php echo esc_html( (string) $field['display'] ); ?>
+												<?php endif; ?>
 											<?php else : ?>
 												—
 											<?php endif; ?>
 										</td>
-									</tr>
-									<tr>
-										<th><?php esc_html_e( 'Email', 'contact-form-submissions' ); ?></th>
-										<td><?php echo $submission->email ? '<a href="mailto:' . esc_attr( $submission->email ) . '">' . esc_html( $submission->email ) . '</a>' : '—'; ?></td>
-									</tr>
-									<?php foreach ( $extra_contact as $ck => $cv ) : ?>
-									<tr>
-										<th><?php echo esc_html( $this->format_extra_field_label( $ck ) ); ?></th>
-										<td><?php echo esc_html( $cv ); ?></td>
-									</tr>
-									<?php endforeach; ?>
-								</table>
-							</div>
-						</div>
-
-						<!-- ── Section: Form fields ── -->
-						<?php
-						$has_form_fields = ! empty( $submission->comment )
-							|| ! empty( $form_data['select'] )
-							|| ! empty( $extra_fields );
-						if ( $has_form_fields ) :
-						?>
-						<div class="postbox">
-							<h2 class="hndle"><span><?php esc_html_e( 'Данные формы', 'contact-form-submissions' ); ?></span></h2>
-							<div class="inside">
-								<table class="form-table" style="margin-top:0;">
-									<?php if ( ! empty( $form_data['select'] ) ) : ?>
-									<tr>
-										<th><?php esc_html_e( 'Выбор', 'contact-form-submissions' ); ?></th>
-										<td><?php echo esc_html( $form_data['select'] ); ?></td>
-									</tr>
-									<?php endif; ?>
-									<?php if ( ! empty( $submission->comment ) ) : ?>
-									<tr>
-										<th><?php esc_html_e( 'Комментарий', 'contact-form-submissions' ); ?></th>
-										<td><?php echo nl2br( esc_html( $submission->comment ) ); ?></td>
-									</tr>
-									<?php endif; ?>
-									<?php foreach ( $extra_fields as $ek => $ev ) : ?>
-									<tr>
-										<th><?php echo esc_html( $this->format_extra_field_label( $ek ) ); ?></th>
-										<td><?php echo nl2br( esc_html( $ev ) ); ?></td>
 									</tr>
 									<?php endforeach; ?>
 								</table>
@@ -617,23 +638,70 @@ class CFS_Admin {
 						</div>
 						<?php endif; ?>
 
-					</div>
+						<!-- ── Section: Form fields ── -->
+						<?php if ( ! empty( $data_fields ) ) : ?>
+						<div class="postbox">
+							<h2 class="hndle"><span><?php esc_html_e( 'Данные формы', 'contact-form-submissions' ); ?></span></h2>
+							<div class="inside">
+								<table class="form-table">
+									<?php foreach ( $data_fields as $field ) : ?>
+									<tr>
+										<th><?php echo esc_html( $field['label'] ); ?></th>
+										<td><?php echo ( '' !== (string) $field['display'] ) ? nl2br( esc_html( (string) $field['display'] ) ) : '—'; ?></td>
+									</tr>
+									<?php endforeach; ?>
+								</table>
+							</div>
+						</div>
+						<?php endif; ?>
 
-					<!-- ═══ Sidebar ═══ -->
-					<div id="postbox-container-1" class="postbox-container" style="width:35%;">
+						<!-- ── Section: Hidden fields (UTM and friends) ── -->
+						<?php if ( ! empty( $hidden_fields ) ) : ?>
+						<div class="postbox">
+							<h2 class="hndle"><span><?php esc_html_e( 'Технические данные', 'contact-form-submissions' ); ?></span></h2>
+							<div class="inside">
+								<table class="form-table">
+									<?php foreach ( $hidden_fields as $field ) : ?>
+									<tr>
+										<th><code><?php echo esc_html( $field['name'] ); ?></code></th>
+										<td><?php echo esc_html( (string) $field['display'] ); ?></td>
+									</tr>
+									<?php endforeach; ?>
+								</table>
+							</div>
+						</div>
+						<?php endif; ?>
+
+						<?php $this->render_panels( $submission, 'main' ); ?>
+
+				</div>
+
+				<!-- ═══ Sidebar ═══ -->
+				<div class="cfs-detail-sidebar">
 
 						<!-- ── Section: Status & meta ── -->
 						<div class="postbox">
 							<h2 class="hndle"><span><?php esc_html_e( 'Информация о заявке', 'contact-form-submissions' ); ?></span></h2>
 							<div class="inside">
-								<table class="form-table" style="margin-top:0;">
+								<table class="form-table">
 									<tr>
 										<th><?php esc_html_e( 'ID', 'contact-form-submissions' ); ?></th>
 										<td><strong><?php echo (int) $submission->id; ?></strong></td>
 									</tr>
 									<tr>
 										<th><?php esc_html_e( 'Форма', 'contact-form-submissions' ); ?></th>
-										<td><code><?php echo esc_html( $submission->form_id ); ?></code></td>
+										<td>
+											<?php if ( '' !== $form_edit_url ) : ?>
+												<a href="<?php echo esc_url( $form_edit_url ); ?>"><?php echo esc_html( $item->get_form_title() ); ?></a>
+											<?php else : ?>
+												<code><?php echo esc_html( $item->get_form_id() ); ?></code>
+											<?php endif; ?>
+											<?php if ( $item->is_stale() ) : ?>
+												<p class="description" style="margin:4px 0 0;">
+													<?php esc_html_e( 'Отправлено со страницы, где форма была старой версии.', 'contact-form-submissions' ); ?>
+												</p>
+											<?php endif; ?>
+										</td>
 									</tr>
 									<tr>
 										<th><?php esc_html_e( 'Статус', 'contact-form-submissions' ); ?></th>
@@ -681,32 +749,230 @@ class CFS_Admin {
 							</div>
 						</div>
 
-					</div>
+						<?php $this->render_panels( $submission, 'side' ); ?>
+
 				</div>
+
 			</div>
 
-			<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				var btn = document.getElementById('cfs-save-status');
-				if (!btn) return;
-				btn.addEventListener('click', function() {
-					var sel = document.getElementById('cfs-status-select');
-					var msg = document.getElementById('cfs-status-msg');
-					var data = new FormData();
-					data.append('action', 'cfs_update_status');
-					data.append('nonce', '<?php echo esc_js( wp_create_nonce( 'cfs_admin_action' ) ); ?>');
-					data.append('id', sel.dataset.id);
-					data.append('status', sel.value);
-					fetch('<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', { method: 'POST', body: data })
-						.then(function(r){ return r.json(); })
-						.then(function(res){
-							msg.textContent = res.data && res.data.message ? res.data.message : '';
-						});
-				});
-			});
-			</script>
 		</div>
 		<?php
+	}
+
+	/* ═══════════════════════════════════════════════════════════════════════
+	   EXTENSION API — panels and notices contributed by add-on plugins
+	   ═══════════════════════════════════════════════════════════════════════ */
+
+	/**
+	 * Render add-on panels for one context of the submission detail screen.
+	 *
+	 * Add-ons describe a panel as data and the core renders and escapes it, so
+	 * an integration needs no markup, no CSS and no JavaScript of its own — and
+	 * a site with no add-ons pays nothing, because the filter returns an empty
+	 * array and nothing is emitted.
+	 *
+	 * Panel shape:
+	 *
+	 *   array(
+	 *     'id'       => 'bitrix24',                  // required, unique slug
+	 *     'title'    => 'Битрикс24',                 // required, panel heading
+	 *     'context'  => 'side',                      // 'side' (default) or 'main'
+	 *     'priority' => 10,                          // lower renders first
+	 *     'rows'     => array(
+	 *        array(
+	 *          'label' => 'Статус',
+	 *          'value' => 'Передана',                // plain text, escaped by core
+	 *          'url'   => 'https://…',               // optional — renders a link
+	 *          'color' => '#00a32a',                 // optional
+	 *          'small' => true,                      // optional — smaller type
+	 *        ),
+	 *     ),
+	 *     'actions'  => array(
+	 *        array(
+	 *          'action'     => 'my_addon_retry',     // wp_ajax_{action} handler
+	 *          'label'      => 'Отправить повторно',
+	 *          'busy_label' => 'Отправляем…',        // optional
+	 *          'reload'     => true,                 // optional — reload on success
+	 *          'payload'    => array( 'foo' => 1 ),  // optional extra POST fields
+	 *        ),
+	 *     ),
+	 *   )
+	 *
+	 * Action handlers receive the submission ID as POST "id" and must verify the
+	 * shared nonce with check_ajax_referer( 'cfs_admin_action', 'nonce' ) plus
+	 * their own capability check.
+	 *
+	 * @param object $submission Raw DB row.
+	 * @param string $context    'side' or 'main'.
+	 */
+	private function render_panels( $submission, string $context ): void {
+		/**
+		 * Filter the add-on panels shown on the submission detail screen.
+		 *
+		 * @param array  $panels     List of panel definitions.
+		 * @param object $submission Raw submission row.
+		 */
+		$panels = (array) apply_filters( 'cfs_submission_panels', array(), $submission );
+
+		if ( empty( $panels ) ) {
+			return;
+		}
+
+		// Stable ordering: by priority, then by declaration order.
+		$ordered = array();
+		foreach ( array_values( $panels ) as $index => $panel ) {
+			if ( ! is_array( $panel ) || empty( $panel['title'] ) ) {
+				continue;
+			}
+			if ( ( $panel['context'] ?? 'side' ) !== $context ) {
+				continue;
+			}
+			$ordered[] = array(
+				'priority' => (int) ( $panel['priority'] ?? 10 ),
+				'index'    => $index,
+				'panel'    => $panel,
+			);
+		}
+
+		if ( empty( $ordered ) ) {
+			return;
+		}
+
+		usort(
+			$ordered,
+			static function ( array $a, array $b ): int {
+				return ( $a['priority'] <=> $b['priority'] ) ?: ( $a['index'] <=> $b['index'] );
+			}
+		);
+
+		foreach ( $ordered as $entry ) {
+			$this->render_single_panel( $entry['panel'], $submission );
+		}
+	}
+
+	/**
+	 * Render one add-on panel.
+	 *
+	 * @param array  $panel      Panel definition.
+	 * @param object $submission Raw DB row.
+	 */
+	private function render_single_panel( array $panel, $submission ): void {
+		$rows    = isset( $panel['rows'] ) && is_array( $panel['rows'] ) ? $panel['rows'] : array();
+		$actions = isset( $panel['actions'] ) && is_array( $panel['actions'] ) ? $panel['actions'] : array();
+		$panel_id = isset( $panel['id'] ) ? sanitize_html_class( (string) $panel['id'] ) : '';
+		?>
+		<div class="postbox<?php echo '' !== $panel_id ? ' cfs-panel--' . esc_attr( $panel_id ) : ''; ?>">
+			<h2 class="hndle"><span><?php echo esc_html( (string) $panel['title'] ); ?></span></h2>
+			<div class="inside">
+				<?php if ( ! empty( $rows ) ) : ?>
+					<table class="form-table">
+						<?php
+						foreach ( $rows as $row ) :
+							if ( ! is_array( $row ) ) {
+								continue;
+							}
+							$value = (string) ( $row['value'] ?? '' );
+							$url   = (string) ( $row['url'] ?? '' );
+							$color = (string) ( $row['color'] ?? '' );
+							$small = ! empty( $row['small'] );
+							$style = '' !== $color ? 'color:' . $color . ';' : '';
+							if ( $small ) {
+								$style .= 'word-break:break-word;';
+							}
+							?>
+							<tr>
+								<th><?php echo esc_html( (string) ( $row['label'] ?? '' ) ); ?></th>
+								<td>
+									<?php
+									$tag_open  = $small ? '<small style="' . esc_attr( $style ) . '">' : ( '' !== $style ? '<strong style="' . esc_attr( $style ) . '">' : '' );
+									$tag_close = $small ? '</small>' : ( '' !== $style ? '</strong>' : '' );
+
+									echo wp_kses_post( $tag_open );
+									if ( '' === $value ) {
+										echo '—';
+									} elseif ( '' !== $url ) {
+										printf(
+											'<a href="%s" target="_blank" rel="noopener">%s</a>',
+											esc_url( $url ),
+											esc_html( $value )
+										);
+									} else {
+										echo esc_html( $value );
+									}
+									echo wp_kses_post( $tag_close );
+									?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</table>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $actions ) ) : ?>
+					<p style="margin:6px 0 0;">
+						<?php
+						foreach ( $actions as $action ) :
+							if ( ! is_array( $action ) || empty( $action['action'] ) || empty( $action['label'] ) ) {
+								continue;
+							}
+							$payload = ! empty( $action['payload'] ) && is_array( $action['payload'] )
+								? (string) wp_json_encode( $action['payload'] )
+								: '';
+							?>
+							<button
+								type="button"
+								class="button cfs-panel-action"
+								data-action="<?php echo esc_attr( sanitize_key( (string) $action['action'] ) ); ?>"
+								data-id="<?php echo (int) $submission->id; ?>"
+								data-busy-label="<?php echo esc_attr( (string) ( $action['busy_label'] ?? '…' ) ); ?>"
+								data-reload="<?php echo ! empty( $action['reload'] ) ? '1' : '0'; ?>"
+								<?php if ( '' !== $payload ) : ?>
+									data-payload="<?php echo esc_attr( $payload ); ?>"
+								<?php endif; ?>
+							><?php echo esc_html( (string) $action['label'] ); ?></button>
+						<?php endforeach; ?>
+						<span class="cfs-panel-action-msg" style="margin-left:6px;"></span>
+					</p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render admin notices contributed by add-ons on the submissions list.
+	 *
+	 * Notice shape: array( 'type' => 'warning'|'error'|'info'|'success',
+	 *                      'message' => 'text', 'url' => '…', 'link_text' => '…' )
+	 */
+	private function render_list_notices(): void {
+		/**
+		 * Filter the notices shown above the submissions list.
+		 *
+		 * @param array $notices List of notice definitions.
+		 */
+		$notices = (array) apply_filters( 'cfs_submission_notices', array() );
+
+		foreach ( $notices as $notice ) {
+			if ( ! is_array( $notice ) || empty( $notice['message'] ) ) {
+				continue;
+			}
+			$type = (string) ( $notice['type'] ?? 'info' );
+			if ( ! in_array( $type, array( 'info', 'warning', 'error', 'success' ), true ) ) {
+				$type = 'info';
+			}
+			?>
+			<div class="notice notice-<?php echo esc_attr( $type ); ?>">
+				<p>
+					<?php echo esc_html( (string) $notice['message'] ); ?>
+					<?php if ( ! empty( $notice['url'] ) ) : ?>
+						<a href="<?php echo esc_url( (string) $notice['url'] ); ?>">
+							<?php echo esc_html( (string) ( $notice['link_text'] ?? __( 'Подробнее', 'contact-form-submissions' ) ) ); ?>
+						</a>
+					<?php endif; ?>
+				</p>
+			</div>
+			<?php
+		}
 	}
 
 	/**
@@ -740,7 +1006,14 @@ class CFS_Admin {
 						<th><label for="cfs_banned_words"><?php esc_html_e( 'Запрещённые слова', 'contact-form-submissions' ); ?></label></th>
 						<td>
 							<textarea id="cfs_banned_words" name="cfs_banned_words" rows="5" class="large-text"><?php echo esc_textarea( get_option( 'cfs_banned_words', '' ) ); ?></textarea>
-							<p class="description"><?php esc_html_e( 'По одному слову на строку.', 'contact-form-submissions' ); ?></p>
+							<p class="description"><?php esc_html_e( 'По одному слову на строку. Проверяются все текстовые поля заявки.', 'contact-form-submissions' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="cfs_max_comment_length"><?php esc_html_e( 'Максимальная длина комментария', 'contact-form-submissions' ); ?></label></th>
+						<td>
+							<input type="number" min="1" max="65000" step="1" id="cfs_max_comment_length" name="cfs_max_comment_length" value="<?php echo esc_attr( (string) (int) get_option( 'cfs_max_comment_length', 1000 ) ); ?>" class="small-text">
+							<p class="description"><?php esc_html_e( 'Символов в поле «Комментарий». По умолчанию 1000.', 'contact-form-submissions' ); ?></p>
 						</td>
 					</tr>
 					<tr>
@@ -834,59 +1107,159 @@ class CFS_Admin {
 	 * Render help page.
 	 */
 	public function page_help(): void {
-		?>
-		<div class="wrap cfs-admin-wrap">
-			<h1><?php esc_html_e( 'Помощь', 'contact-form-submissions' ); ?></h1>
-			<h2><?php esc_html_e( 'Использование шорткода', 'contact-form-submissions' ); ?></h2>
-			<pre style="background:#f5f5f5;padding:12px;border:1px solid #ddd;">
-[contact_form]
-[contact_form fields="name,phone,email" title="Обратная связь"]
-[contact_form fields="name,phone,select" select_label="Тема" select_options="Вопрос:question,Другое:other"]
-[contact_form form_id="quick" fields="name,phone" button_text="Перезвоните мне"]
-			</pre>
-			<h2><?php esc_html_e( 'Поля формы', 'contact-form-submissions' ); ?></h2>
-			<p><?php esc_html_e( 'Доступны: name, surname, patronymic, phone, email, comment, select, checkbox, hidden.', 'contact-form-submissions' ); ?></p>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Format a display label for an extra / indexed field key.
-	 *
-	 * Converts known indexed tokens to translated strings:
-	 *   "comment_2"  → "Комментарий 2"
-	 *   "name_2"     → "Имя 2"
-	 *   "phone_3"    → "Телефон 3"
-	 *
-	 * Unknown / custom keys (e.g. "utm_source") are returned as-is.
-	 *
-	 * @param string $key Field key from form_data_json extra array.
-	 * @return string
-	 */
-	private function format_extra_field_label( string $key ): string {
-		$base_labels = array(
-			'name'       => __( 'Имя', 'contact-form-submissions' ),
-			'surname'    => __( 'Фамилия', 'contact-form-submissions' ),
-			'patronymic' => __( 'Отчество', 'contact-form-submissions' ),
-			'phone'      => __( 'Телефон', 'contact-form-submissions' ),
-			'email'      => __( 'Email', 'contact-form-submissions' ),
-			'comment'    => __( 'Комментарий', 'contact-form-submissions' ),
-			'select'     => __( 'Выберите', 'contact-form-submissions' ),
-			'checkbox'   => __( 'Согласен', 'contact-form-submissions' ),
-			'agreement'  => __( 'Согласие', 'contact-form-submissions' ),
-			'radio'      => __( 'Выбор', 'contact-form-submissions' ),
-		);
-
-		if ( preg_match( '/^([a-z]+)_(\d+)$/', $key, $m ) ) {
-			$base  = $m[1];
-			$index = (int) $m[2];
-			if ( isset( $base_labels[ $base ] ) ) {
-				return $base_labels[ $base ] . ' ' . $index;
-			}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
 		}
 
-		// Unknown key (custom hidden field, etc.) — return as-is.
-		return $key;
+		$types = CFS_Field_Types::all();
+		?>
+		<div class="wrap cfs-help">
+			<h1><?php esc_html_e( 'Помощь', 'contact-form-submissions' ); ?></h1>
+
+			<h2><?php esc_html_e( 'Как это устроено', 'contact-form-submissions' ); ?></h2>
+			<p>
+				<?php esc_html_e( 'Форма создаётся в разделе «Заявки → Формы». Её содержимое — обычный текст: всё, что в квадратных скобках, становится полем ввода, всё остальное выводится как HTML.', 'contact-form-submissions' ); ?>
+			</p>
+			<p>
+				<?php esc_html_e( 'Готовую форму выводит шорткод с её номером:', 'contact-form-submissions' ); ?>
+				<code>[contact_form id="12"]</code> <?php esc_html_e( 'или', 'contact-form-submissions' ); ?> <code>[contact_form slug="callback"]</code>.
+			</p>
+
+			<h2><?php esc_html_e( 'Синтаксис тега', 'contact-form-submissions' ); ?></h2>
+			<pre class="cfs-help-code">[тип* имя атрибут="значение"]</pre>
+			<ul class="cfs-help-list">
+				<li><code>тип</code> — <?php esc_html_e( 'какое это поле; список ниже.', 'contact-form-submissions' ); ?></li>
+				<li><code>*</code> — <?php esc_html_e( 'поле обязательное. Без звёздочки — необязательное.', 'contact-form-submissions' ); ?></li>
+				<li><code>имя</code> — <?php esc_html_e( 'латиницей; под этим именем значение попадёт в заявку, письмо и CRM. Если не указать — плагин подставит имя по типу.', 'contact-form-submissions' ); ?></li>
+				<li><?php esc_html_e( 'Атрибуты — в любом порядке. Значение в кавычках может содержать пробелы и скобки.', 'contact-form-submissions' ); ?></li>
+				<li><code>[# текст]</code> — <?php esc_html_e( 'комментарий, в форму не попадает.', 'contact-form-submissions' ); ?></li>
+				<li><code>\[</code> — <?php esc_html_e( 'обычная квадратная скобка в тексте.', 'contact-form-submissions' ); ?></li>
+			</ul>
+
+			<h2><?php esc_html_e( 'Типы полей', 'contact-form-submissions' ); ?></h2>
+			<table class="widefat striped cfs-help-table">
+				<thead>
+					<tr>
+						<th style="width:18%"><?php esc_html_e( 'Тип', 'contact-form-submissions' ); ?></th>
+						<th style="width:26%"><?php esc_html_e( 'Что это', 'contact-form-submissions' ); ?></th>
+						<th><?php esc_html_e( 'Свои атрибуты', 'contact-form-submissions' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $types as $type => $descriptor ) : ?>
+						<?php
+						$own = array_values(
+							array_diff(
+								(array) $descriptor['supports'],
+								CFS_Field_Types::COMMON_SUPPORTS
+							)
+						);
+						?>
+						<tr>
+							<td><code><?php echo esc_html( $type ); ?></code></td>
+							<td><?php echo esc_html( (string) $descriptor['label'] ); ?></td>
+							<td><?php echo '' !== implode( '', $own ) ? '<code>' . esc_html( implode( '</code>, <code>', $own ) ) . '</code>' : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+			<p class="description">
+				<?php
+				printf(
+					/* translators: %s: list of common attributes */
+					esc_html__( 'Общие атрибуты для всех полей ввода: %s.', 'contact-form-submissions' ),
+					'<code>' . esc_html( implode( '</code>, <code>', CFS_Field_Types::COMMON_SUPPORTS ) ) . '</code>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				);
+				?>
+			</p>
+
+			<h2><?php esc_html_e( 'Примеры', 'contact-form-submissions' ); ?></h2>
+
+			<p><strong><?php esc_html_e( 'Обратный звонок:', 'contact-form-submissions' ); ?></strong></p>
+			<pre class="cfs-help-code">[name* first_name label="Имя" icon="user"]
+[phone* phone label="Телефон" icon="phone"]
+[submit "Жду звонка"]</pre>
+
+			<p><strong><?php esc_html_e( 'Два поля в строку:', 'contact-form-submissions' ); ?></strong></p>
+			<pre class="cfs-help-code">&lt;div class="cfs-row"&gt;
+	[name* first_name label="Имя" width="1/2"]
+	[phone* phone label="Телефон" width="1/2"]
+&lt;/div&gt;
+[submit "Отправить"]</pre>
+
+			<p><strong><?php esc_html_e( 'Список и согласие:', 'contact-form-submissions' ); ?></strong></p>
+			<pre class="cfs-help-code">[select* topic label="Тема" options="Консультация:consult,Расчёт:calc"]
+[textarea comment label="Комментарий" rows="4"]
+[agreement* consent label="Я согласен с &lt;a href='/privacy/'&gt;политикой&lt;/a&gt;"]
+[submit "Отправить"]</pre>
+
+			<p><strong><?php esc_html_e( 'Мастер в два шага:', 'contact-form-submissions' ); ?></strong></p>
+			<pre class="cfs-help-code">[step label="Контакты"]
+[name* first_name label="Имя"]
+[phone* phone label="Телефон"]
+
+[step label="Детали"]
+[date when label="Удобная дата"]
+[textarea comment label="Комментарий"]
+
+[submit "Готово"]</pre>
+
+			<p><strong><?php esc_html_e( 'UTM-метка из адреса страницы:', 'contact-form-submissions' ); ?></strong></p>
+			<pre class="cfs-help-code">[hidden utm_source source="query:utm_source"]</pre>
+			<p class="description">
+				<?php esc_html_e( 'Источники: query:параметр, cookie:имя, page:url|title|id, user:email|login|name|id.', 'contact-form-submissions' ); ?>
+			</p>
+
+			<h2><?php esc_html_e( 'Подстановки в письмах', 'contact-form-submissions' ); ?></h2>
+			<p>
+				<?php esc_html_e( 'В теме и тексте письма работают подстановки в фигурных скобках: имя поля подставит его значение, {all_fields} — таблицу всех полей. Полный список доступных подстановок показан прямо над полями на вкладке «Письма» той формы, которую вы редактируете.', 'contact-form-submissions' ); ?>
+			</p>
+			<pre class="cfs-help-code">Тема: Заявка от {first_name}
+Текст: {all_fields}
+
+Служебные: {site_name} {form_title} {submission_id} {admin_url} {date} {ip} {page_url}</pre>
+
+			<h2><?php esc_html_e( 'HTML в шаблоне', 'contact-form-submissions' ); ?></h2>
+			<p>
+				<?php esc_html_e( 'Вокруг полей можно писать обычную разметку: заголовки, абзацы, списки, таблицы, ссылки, картинки. Опасные теги (script, iframe) и обработчики событий вырезаются при сохранении. Поля формы (input, select) вручную вставлять нельзя — их значения всё равно не будут приняты.', 'contact-form-submissions' ); ?>
+			</p>
+
+			<h2><?php esc_html_e( 'Хуки для разработчиков', 'contact-form-submissions' ); ?></h2>
+			<pre class="cfs-help-code">// Приём заявки.
+apply_filters( 'cfs_before_save',      $data, $form_id )
+do_action(    'cfs_after_save',        $submission_id, $data )
+apply_filters( 'cfs_validate_field',   $error, $name, $value, $form_id )
+apply_filters( 'cfs_spam_check',       $is_spam, $data, $form_id )
+apply_filters( 'cfs_rate_limit',       $is_limited, $ip, $form_id )
+apply_filters( 'cfs_success_response', $response, $data )
+
+// Форма.
+apply_filters( 'cfs_field_types',      $types )
+apply_filters( 'cfs_icon_library',     $icons )
+apply_filters( 'cfs_compiled_schema',  $schema, $template )
+apply_filters( 'cfs_template_allowed_html', $tags )
+apply_filters( 'cfs_render_field',     $html, $field, $renderer )
+apply_filters( 'cfs_form_html',        $html, $form_id, $form, $instance )
+
+// Письма и действия.
+apply_filters( 'cfs_mail_context',     $context, $data, $form )
+apply_filters( 'cfs_email_recipients', $recipients, $data, $slot )
+apply_filters( 'cfs_email_headers',    $headers, $data )
+apply_filters( 'cfs_email_body',       $body, $data )
+apply_filters( 'cfs_integrations',     $items )
+apply_filters( 'cfs_action_response',  $overrides, $form, $data, $submission_id )
+
+// Админка (для дополнений).
+apply_filters( 'cfs_submission_panels',  $panels, $submission )
+apply_filters( 'cfs_submission_notices', $notices )
+apply_filters( 'cfs_manage_capability',  $capability )</pre>
+		</div>
+		<style>
+			.cfs-help-code{background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px;overflow-x:auto;}
+			.cfs-help-list li{margin-bottom:4px;}
+			.cfs-help-table{margin-bottom:8px;}
+		</style>
+		<?php
 	}
 
 	/**
@@ -916,8 +1289,8 @@ class CFS_Admin {
 	 */
 	private function pagination_html( int $current, int $total, string $base_url, string $status, string $form_id ): string {
 		$html = '<span class="displaying-num">' . sprintf(
-			/* translators: %d: page number */
-			esc_html__( 'Страница %d из %d', 'contact-form-submissions' ),
+			/* translators: 1: current page number, 2: total pages */
+			esc_html__( 'Страница %1$d из %2$d', 'contact-form-submissions' ),
 			$current,
 			$total
 		) . '</span> ';

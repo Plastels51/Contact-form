@@ -1,0 +1,404 @@
+/**
+ * Form editor and forms list.
+ *
+ * Scoped to .cfs-editor / .cfs-forms so nothing leaks into other admin screens.
+ */
+
+/* ─────────────────────────────────────────────────────────────
+   FORMS LIST
+   ───────────────────────────────────────────────────────────── */
+.cfs-forms .cfs-badge {
+	display: inline-block;
+	margin-left: 6px;
+	padding: 1px 7px;
+	border-radius: 9px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.7;
+	vertical-align: middle;
+}
+
+.cfs-forms .cfs-badge--error {
+	background: #f8d7da;
+	color: #842029;
+}
+
+.cfs-forms .cfs-badge--warning {
+	background: #fff3cd;
+	color: #664d03;
+}
+
+.cfs-forms .cfs-import-title {
+	margin-top: 2.5rem;
+}
+
+.cfs-muted {
+	color: #767676;
+}
+
+.cfs-req {
+	color: #d63638;
+	font-weight: 600;
+}
+
+/* Click-to-copy shortcode chip. */
+.cfs-shortcode {
+	position: relative;
+	cursor: pointer;
+	user-select: all;
+	background: #f0f0f1;
+	border-radius: 3px;
+	padding: 3px 8px;
+}
+
+.cfs-shortcode:hover,
+.cfs-shortcode:focus {
+	background: #dcdcde;
+}
+
+.cfs-shortcode.is-copied::after {
+	content: "✓";
+	position: absolute;
+	right: -18px;
+	color: #008a20;
+	font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   EDITOR HEADER
+   ───────────────────────────────────────────────────────────── */
+.cfs-editor-header {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	align-items: center;
+	justify-content: space-between;
+	position: sticky;
+	top: 32px;
+	z-index: 20;
+	margin: 0 0 1rem;
+	padding: 12px 16px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.cfs-editor-title {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .75rem;
+	align-items: center;
+	flex: 1 1 320px;
+}
+
+.cfs-editor-title input[type="text"] {
+	font-size: 18px;
+	font-weight: 600;
+	padding: 6px 10px;
+	min-width: 260px;
+	flex: 1 1 260px;
+}
+
+.cfs-editor-actions {
+	display: flex;
+	gap: .5rem;
+	align-items: center;
+}
+
+@media screen and (max-width: 782px) {
+	.cfs-editor-header {
+		position: static;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TABS
+   ───────────────────────────────────────────────────────────── */
+.cfs-editor .cfs-tabs {
+	margin-bottom: 0;
+}
+
+.cfs-editor .cfs-tabs .nav-tab {
+	background: none;
+	cursor: pointer;
+	font-size: 14px;
+}
+
+.cfs-tab-panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-top: 0;
+	padding: 1rem 1.25rem 1.5rem;
+}
+
+.cfs-tab-panel[hidden] {
+	display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TEMPLATE TAB
+   ───────────────────────────────────────────────────────────── */
+.cfs-editor-columns {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.5rem;
+	align-items: flex-start;
+}
+
+.cfs-editor-main {
+	flex: 1 1 480px;
+	min-width: 0;
+}
+
+.cfs-editor-side {
+	flex: 0 1 340px;
+	min-width: 0;
+}
+
+#cfs-template {
+	width: 100%;
+	min-height: 420px;
+	font-family: Consolas, Monaco, "Andale Mono", monospace;
+	font-size: 13px;
+	line-height: 1.6;
+	tab-size: 4;
+	white-space: pre;
+	overflow-wrap: normal;
+	overflow-x: auto;
+}
+
+.cfs-tag-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	align-items: center;
+	margin-bottom: .75rem;
+}
+
+.cfs-tag-bar-label {
+	font-weight: 600;
+	margin-right: .25rem;
+}
+
+/* Specificity rather than !important — the plugin never uses it. */
+.cfs-editor .cfs-tag-bar .button.cfs-tag-btn {
+	font-size: 12px;
+	height: auto;
+	min-height: 0;
+	padding: 2px 8px;
+	line-height: 1.8;
+}
+
+.cfs-tag-dialog {
+	margin: 0 0 .75rem;
+	padding: 1rem;
+	background: #f6f7f7;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.cfs-tag-dialog h4 {
+	margin: 0 0 .75rem;
+}
+
+.cfs-tag-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: .75rem;
+}
+
+.cfs-tag-field {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	font-size: 12px;
+}
+
+.cfs-tag-field span {
+	font-weight: 600;
+	color: #50575e;
+}
+
+.cfs-tag-field--check {
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
+	align-self: end;
+}
+
+.cfs-tag-field--check span {
+	order: 2;
+}
+
+.cfs-tag-actions {
+	display: flex;
+	gap: .5rem;
+	margin-top: 1rem;
+}
+
+.cfs-tag-error {
+	margin: .75rem 0 0;
+	color: #d63638;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SIDE PANELS
+   ───────────────────────────────────────────────────────────── */
+.cfs-panel {
+	margin-bottom: 1.25rem;
+	padding: 1rem;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.cfs-panel h3 {
+	margin: 0 0 .75rem;
+	font-size: 14px;
+}
+
+.cfs-field-list,
+.cfs-history {
+	margin: 0;
+	list-style: none;
+}
+
+.cfs-field-list li,
+.cfs-history li {
+	display: flex;
+	gap: .5rem;
+	align-items: center;
+	padding: 3px 0;
+	border-bottom: 1px solid #eaeaea;
+	font-size: 13px;
+}
+
+.cfs-field-list li:last-child,
+.cfs-history li:last-child {
+	border-bottom: 0;
+}
+
+.cfs-history li {
+	justify-content: space-between;
+}
+
+.cfs-preview-area {
+	margin-top: .75rem;
+	padding: 1rem;
+	background: #fff;
+	border: 1px dashed #c3c4c7;
+	border-radius: 4px;
+	min-height: 60px;
+}
+
+.cfs-preview-area.is-loading {
+	opacity: .5;
+}
+
+.cfs-preview-errors {
+	margin: 1rem 0 0;
+	padding: 0;
+	list-style: none;
+	font-size: 12px;
+}
+
+.cfs-preview-errors li {
+	padding: 3px 6px;
+	border-left: 3px solid transparent;
+}
+
+.cfs-preview-errors .is-error {
+	border-left-color: #d63638;
+	background: #fcf0f1;
+}
+
+.cfs-preview-errors .is-warning {
+	border-left-color: #dba617;
+	background: #fcf9e8;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FORM CONTROLS INSIDE TABS
+   ───────────────────────────────────────────────────────────── */
+.cfs-radio-row,
+.cfs-check-row {
+	display: block;
+	margin-bottom: 6px;
+}
+
+.cfs-inline-label {
+	display: inline-block;
+	min-width: 210px;
+}
+
+.cfs-compile-errors ul {
+	margin: 0 0 1em 1.5em;
+	list-style: disc;
+}
+
+.cfs-error-raw {
+	margin-left: .5rem;
+	font-size: 11px;
+	opacity: .75;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MAIL TAB
+   ───────────────────────────────────────────────────────────── */
+.cfs-mailtags {
+	margin-bottom: 1rem;
+	padding: .75rem 1rem;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	line-height: 2;
+}
+
+.cfs-mailtag {
+	cursor: pointer;
+	margin-left: 4px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	padding: 2px 6px;
+}
+
+.cfs-mailtag:hover {
+	background: #2271b1;
+	border-color: #2271b1;
+	color: #fff;
+}
+
+.cfs-mail-slot h3 label {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.cfs-mail-body {
+	font-family: Consolas, Monaco, "Andale Mono", monospace;
+	font-size: 13px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INTEGRATIONS TAB
+   ───────────────────────────────────────────────────────────── */
+.cfs-integration h3 label {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.cfs-field-map {
+	border-collapse: collapse;
+}
+
+.cfs-field-map th {
+	text-align: left;
+	font-weight: 400;
+	padding: 3px 12px 3px 0;
+	white-space: nowrap;
+}
+
+.cfs-field-map td {
+	padding: 3px 0;
+}

@@ -1,102 +1,1688 @@
-# Copyright (C) 2026 Contact Form Submissions
-# This file is distributed under the same license as the Contact Form Submissions plugin.
+# Copyright (C) 2026 Plastels51
+# This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Contact Form Submissions 2.0.0\n"
-"Report-Msgid-Bugs-To: https://example.com\n"
-"POT-Creation-Date: 2026-03-14T00:00:00+00:00\n"
+"Project-Id-Version: Contact Form Submissions 3.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/contact-form-submissions\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2026-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"X-Generator: WP-CLI 2.x\n"
+"POT-Creation-Date: 2026-08-02T14:25:57+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: contact-form-submissions\n"
 
-msgid "Отправить"
+#. Plugin Name of the plugin
+#: contact-form-submissions.php
+msgid "Contact Form Submissions"
 msgstr ""
 
-msgid "Спасибо! Мы свяжемся с вами."
+#. Plugin URI of the plugin
+#: contact-form-submissions.php
+msgid "https://github.com/Plastels51/contact-form-submissions#readme"
 msgstr ""
 
-msgid "Имя"
+#. Description of the plugin
+#: contact-form-submissions.php
+msgid "Flexible contact forms via shortcode."
 msgstr ""
 
-msgid "Фамилия"
+#. Author of the plugin
+#: contact-form-submissions.php
+msgid "Plastels51"
 msgstr ""
 
-msgid "Отчество"
+#. Author URI of the plugin
+#: contact-form-submissions.php
+msgid "https://github.com/Plastels51"
 msgstr ""
 
-msgid "Телефон"
+#: includes/admin/class-cfs-admin-form-editor.php:45
+#: includes/admin/class-cfs-admin-form-editor.php:245
+#: includes/admin/class-cfs-admin-form-editor.php:281
+#: includes/admin/class-cfs-admin-forms.php:187
+#: includes/legacy/class-cfs-legacy-wizard.php:94
+#: includes/legacy/class-cfs-legacy-wizard.php:333
+msgid "Недостаточно прав."
 msgstr ""
 
-msgid "Email"
+#: includes/admin/class-cfs-admin-form-editor.php:50
+msgid "Форма не найдена."
 msgstr ""
 
-msgid "Комментарий"
+#: includes/admin/class-cfs-admin-form-editor.php:288
+msgid "Форма не найдена"
 msgstr ""
 
-msgid "Выберите"
+#: includes/admin/class-cfs-admin-form-editor.php:289
+msgid "К списку форм"
 msgstr ""
 
-msgid "Согласен"
+#: includes/admin/class-cfs-admin-form-editor.php:295
+#: includes/class-cfs-admin.php:491
+#: includes/class-cfs-admin.php:681
+#: includes/class-cfs-dashboard.php:128
+#: includes/class-cfs-exporter.php:179
+#: includes/class-cfs-post-type.php:44
+msgid "Форма"
 msgstr ""
 
-msgid "— Выберите —"
+#: includes/admin/class-cfs-admin-form-editor.php:296
+msgid "После отправки"
 msgstr ""
 
+#: includes/admin/class-cfs-admin-form-editor.php:297
+msgid "Письма"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:298
+msgid "Интеграции"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:299
+msgid "Дополнительно"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:317
+#: includes/admin/class-cfs-admin-form-editor.php:323
+msgid "Название формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:325
+#: includes/admin/class-cfs-admin-forms.php:259
+msgid "Нажмите, чтобы скопировать"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:328
+msgid "К списку"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:329
+#: includes/class-cfs-admin.php:704
+msgid "Сохранить"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:334
+msgid "Форма сохранена."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:381
+msgid "В шаблоне есть ошибки:"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:382
+msgid "Замечания по шаблону:"
+msgstr ""
+
+#. translators: %d: line number in the template
+#: includes/admin/class-cfs-admin-form-editor.php:393
+#, php-format
+msgid "строка %d"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:434
+msgid "Вставить поле:"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:440
+msgid "Шаблон формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:444
+msgid "Каждое поле — тег в квадратных скобках: [тип* имя атрибут=\"значение\"]. Звёздочка делает поле обязательным. Всё вне скобок — обычный HTML."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:450
+msgid "Предпросмотр"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:451
+msgid "Обновить предпросмотр"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:456
+msgid "Поля формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:468
+msgid "Пока ни одного поля."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:492
+msgid "История шаблона"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:501
+msgid "Вернуть"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:508
+msgid "Вернуть — подставит старый текст в редактор. Сохранение остаётся за вами."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:525
+msgid "Что делать"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:529
+msgid "Показать сообщение"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:530
+msgid "Перенаправить на страницу"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:531
+msgid "Показать сообщение, затем перенаправить"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:543
+msgid "Сообщение"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:546
+msgid "Допустимы ссылки и простое форматирование: <a>, <strong>, <em>, <br>."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:550
+msgid "Куда перенаправить"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:559
+msgid "или выбрать страницу:"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:561
+msgid "— страница сайта —"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:572
+msgid "Задержка, сек"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:576
+msgid "Поведение"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:578
+msgid "Очистить поля"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:579
+msgid "Прокрутить к сообщению"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:580
+msgid "Закрыть модальное окно"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:584
+msgid "Тексты ошибок"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:588
+msgid "Ошибка в полях"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:589
+msgid "Заявка отклонена как спам"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:590
+msgid "Слишком много попыток"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:591
+msgid "Ошибка сервера"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:598
+msgid "по умолчанию"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:620
+msgid "Доступные подстановки:"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:628
+#: includes/class-cfs-action-runner.php:88
+msgid "Письмо администратору"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:629
+#: includes/class-cfs-action-runner.php:89
+msgid "Автоответ отправителю"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:645
+msgid "Кому"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:652
+msgid "Копия / скрытая копия"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:659
+msgid "Тема"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:661
+msgid "Новая заявка с сайта {site_name}"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:664
+msgid "От кого"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:666
+msgid "Имя отправителя"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:671
+msgid "Обратный адрес"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:677
+msgid "Текст письма"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:682
+msgid "Отправлять как HTML"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:707
+msgid "Интеграции не установлены."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:709
+msgid "Каждая интеграция — отдельный плагин. Установите его, и он сам появится в этом списке со своими настройками."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:807
+msgid "— не передавать —"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:864
+msgid "Контейнер"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:866
+msgid "Обычная форма на странице"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:867
+msgid "Модальное окно по кнопке"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:871
+msgid "Кнопка модального окна"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:874
+msgid "иконка слева"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:875
+msgid "иконка справа"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:876
+msgid "CSS-классы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:880
+msgid "CSS-класс формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:886
+msgid "Оформление полей"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:889
+msgid "— как в общих настройках —"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:892
+msgid "Обычное"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:893
+msgid "Подчёркнутое"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:894
+msgid "Рамка с вырезом"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:895
+msgid "Заливка"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:896
+msgid "Карточка"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:897
+#: includes/class-cfs-admin.php:1060
+msgid "Метка слева"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:907
+msgid "Кнопки мастера"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:909
+#: includes/class-cfs-form.php:558
+#: includes/legacy/class-cfs-form-builder.php:396
+msgid "Назад"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:910
+#: includes/class-cfs-form.php:557
+#: includes/legacy/class-cfs-form-builder.php:395
+msgid "Далее"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:911
+msgid "Используются, когда в шаблоне есть тег [step]."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:915
+msgid "Хранение"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:919
+msgid "Сохранять заявки в базу"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:921
+msgid "Выключите, если заявки нужны только в письме или во внешней системе."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:980
+msgid "таблица всех полей"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:981
+msgid "название сайта"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:982
+msgid "адрес сайта"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:983
+msgid "название формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:984
+msgid "ID формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:985
+msgid "номер заявки"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:986
+msgid "ссылка на заявку в админке"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:987
+msgid "дата и время"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:988
+msgid "IP-адрес"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:989
+msgid "страница отправки"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:990
+msgid "браузер"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1018
+msgid "Вставить"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1019
+msgid "Отмена"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1020
+msgid "Имя поля (латиницей)"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1021
+msgid "Метка"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1022
+msgid "Подсказка в поле"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1023
+msgid "Обязательное"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1024
+msgid "Варианты: Метка:значение через запятую"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1025
+msgid "Иконка"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1026
+msgid "Подсказка под полем"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1027
+msgid "Ширина"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1028
+msgid "Текст кнопки"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1029
+msgid "Новый тег"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1030
+msgid "Скопировано"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1031
+msgid "Не удалось построить предпросмотр."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1032
+msgid "В шаблоне нет полей."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1033
+msgid "Такое имя уже занято в шаблоне."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-form-editor.php:1034
+msgid "Имя: латинские буквы, цифры, дефис и подчёркивание."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:90
+#: includes/class-cfs-form.php:222
+#: includes/class-cfs-post-type.php:45
+msgid "Новая форма"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:195
+#: includes/class-cfs-admin.php:171
+#: includes/class-cfs-admin.php:172
+#: includes/class-cfs-post-type.php:43
+msgid "Формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:197
+msgid "Добавить форму"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:206
+msgid "Название"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:207
+msgid "Шорткод"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:208
+msgid "Полей"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:209
+#: includes/legacy/class-cfs-legacy-wizard.php:411
+msgid "Заявок"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:210
+msgid "Изменена"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:217
+msgid "Форм пока нет. Создайте первую — она сразу появится здесь с готовым шорткодом."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:238
+msgid "ошибки"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:239
+msgid "предупреждения"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:246
+msgid "Изменить"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:247
+msgid "Дублировать"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:248
+msgid "Экспорт"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:249
+#: includes/class-cfs-admin.php:151
+#: includes/class-cfs-admin.php:152
+#: includes/class-cfs-admin.php:431
 msgid "Заявки"
 msgstr ""
 
+#: includes/admin/class-cfs-admin-forms.php:254
+msgid "Удалить форму? Заявки останутся, но форма перестанет выводиться."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:255
+#: includes/class-cfs-admin.php:472
+#: includes/class-cfs-admin.php:529
+#: includes/class-cfs-admin.php:593
+msgid "Удалить"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:274
+msgid "Импорт формы"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:276
+msgid "Загрузите JSON-файл, полученный через «Экспорт» на другом сайте — форма приедет вместе с шаблоном и всеми настройками."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:281
+msgid "Импортировать"
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:297
+msgid "Форма удалена."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:298
+msgid "Файл не выбран."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:299
+msgid "Файл не похож на экспорт формы."
+msgstr ""
+
+#: includes/admin/class-cfs-admin-forms.php:300
+msgid "Не удалось импортировать форму."
+msgstr ""
+
+#: includes/class-cfs-action-result.php:141
+msgid "Действие не выполнено."
+msgstr ""
+
+#: includes/class-cfs-action-runner.php:102
+msgid "В очереди на отправку…"
+msgstr ""
+
+#: includes/class-cfs-action-runner.php:133
+msgid "Интеграция не задала обработчик."
+msgstr ""
+
+#. translators: 1: error message, 2: attempt number
+#: includes/class-cfs-action-runner.php:212
+#, php-format
+msgid "%1$s Повтор через некоторое время (попытка %2$d)."
+msgstr ""
+
+#: includes/class-cfs-action-runner.php:299
+msgid "Действия после отправки"
+msgstr ""
+
+#: includes/class-cfs-action-runner.php:317
+msgid "Выполнено"
+msgstr ""
+
+#: includes/class-cfs-action-runner.php:319
+msgid "Ошибка"
+msgstr ""
+
+#: includes/class-cfs-action-runner.php:321
+msgid "Пропущено"
+msgstr ""
+
+#: includes/class-cfs-admin.php:110
+msgid "Ошибка сети."
+msgstr ""
+
+#: includes/class-cfs-admin.php:162
+#: includes/class-cfs-admin.php:163
 msgid "Все заявки"
 msgstr ""
 
+#: includes/class-cfs-admin.php:185
+#: includes/class-cfs-admin.php:186
+#: includes/class-cfs-post-type.php:46
+msgid "Редактирование формы"
+msgstr ""
+
+#: includes/class-cfs-admin.php:198
+#: includes/class-cfs-admin.php:199
 msgid "Настройки"
 msgstr ""
 
+#: includes/class-cfs-admin.php:207
+#: includes/class-cfs-admin.php:208
+#: includes/class-cfs-admin.php:1106
 msgid "Помощь"
 msgstr ""
 
-msgid "Новые"
+#: includes/class-cfs-admin.php:319
+msgid "Нет прав."
 msgstr ""
 
-msgid "Обработанные"
+#: includes/class-cfs-admin.php:327
+msgid "Неверные параметры."
 msgstr ""
 
-msgid "Спам"
+#: includes/class-cfs-admin.php:333
+msgid "Статус обновлён."
 msgstr ""
 
-msgid "Все"
+#: includes/class-cfs-admin.php:335
+msgid "Ошибка обновления."
 msgstr ""
 
-msgid "Новая"
+#. translators: %s: legacy form identifier
+#: includes/class-cfs-admin.php:410
+#, php-format
+msgid "%s (форма 2.x)"
 msgstr ""
 
-msgid "Обработана"
-msgstr ""
-
+#: includes/class-cfs-admin.php:432
 msgid "Экспорт CSV"
 msgstr ""
 
-msgid "Последние заявки"
+#: includes/class-cfs-admin.php:435
+msgid "Действие выполнено."
 msgstr ""
 
-msgid "Новых заявок нет."
+#: includes/class-cfs-admin.php:442
+msgid "Все"
 msgstr ""
 
+#: includes/class-cfs-admin.php:443
+#: includes/class-cfs-dashboard.php:106
+msgid "Новые"
+msgstr ""
+
+#: includes/class-cfs-admin.php:444
+msgid "Обработанные"
+msgstr ""
+
+#: includes/class-cfs-admin.php:445
+#: includes/class-cfs-admin.php:701
+#: includes/class-cfs-admin.php:1264
+#: includes/class-cfs-dashboard.php:114
+#: includes/class-cfs-dashboard.php:178
+#: includes/class-cfs-exporter.php:234
+msgid "Спам"
+msgstr ""
+
+#: includes/class-cfs-admin.php:455
+msgid "— Все формы —"
+msgstr ""
+
+#: includes/class-cfs-admin.php:460
+msgid "Фильтр"
+msgstr ""
+
+#: includes/class-cfs-admin.php:469
+msgid "Массовые действия"
+msgstr ""
+
+#: includes/class-cfs-admin.php:470
+msgid "Отметить обработанными"
+msgstr ""
+
+#: includes/class-cfs-admin.php:471
+msgid "Пометить спамом"
+msgstr ""
+
+#: includes/class-cfs-admin.php:474
+msgid "Применить"
+msgstr ""
+
+#: includes/class-cfs-admin.php:487
+#: includes/class-cfs-admin.php:677
+msgid "ID"
+msgstr ""
+
+#: includes/class-cfs-admin.php:488
+msgid "ФИО"
+msgstr ""
+
+#: includes/class-cfs-admin.php:489
+#: includes/class-cfs-field-types.php:149
+#: includes/legacy/class-cfs-form-builder.php:218
+#: includes/legacy/class-cfs-form-builder.php:419
+msgid "Телефон"
+msgstr ""
+
+#: includes/class-cfs-admin.php:490
+#: includes/class-cfs-field-types.php:131
+#: includes/legacy/class-cfs-form-builder.php:219
+#: includes/legacy/class-cfs-form-builder.php:420
+msgid "Email"
+msgstr ""
+
+#: includes/class-cfs-admin.php:492
+#: includes/class-cfs-admin.php:710
+#: includes/class-cfs-dashboard.php:129
+#: includes/class-cfs-exporter.php:180
+#: includes/class-cfs-field-types.php:185
+#: includes/legacy/class-cfs-form-builder.php:224
+#: includes/legacy/class-cfs-form-builder.php:449
+msgid "Дата"
+msgstr ""
+
+#: includes/class-cfs-admin.php:493
+#: includes/class-cfs-admin.php:696
+#: includes/class-cfs-exporter.php:181
+msgid "Статус"
+msgstr ""
+
+#: includes/class-cfs-admin.php:494
+msgid "Действия"
+msgstr ""
+
+#: includes/class-cfs-admin.php:499
+msgid "Заявок не найдено."
+msgstr ""
+
+#: includes/class-cfs-admin.php:527
+msgid "Просмотр"
+msgstr ""
+
+#: includes/class-cfs-admin.php:529
+#: includes/class-cfs-admin.php:593
+msgid "Удалить эту заявку?"
+msgstr ""
+
+#: includes/class-cfs-admin.php:557
+msgid "Заявка не найдена."
+msgstr ""
+
+#. translators: %d: submission ID
+#: includes/class-cfs-admin.php:587
+#, php-format
+msgid "Заявка #%d"
+msgstr ""
+
+#: includes/class-cfs-admin.php:591
+msgid "Назад к списку"
+msgstr ""
+
+#: includes/class-cfs-admin.php:604
+msgid "Заявитель"
+msgstr ""
+
+#: includes/class-cfs-admin.php:633
+msgid "Данные формы"
+msgstr ""
+
+#: includes/class-cfs-admin.php:650
+msgid "Технические данные"
+msgstr ""
+
+#: includes/class-cfs-admin.php:673
+msgid "Информация о заявке"
+msgstr ""
+
+#: includes/class-cfs-admin.php:690
+msgid "Отправлено со страницы, где форма была старой версии."
+msgstr ""
+
+#: includes/class-cfs-admin.php:699
+#: includes/class-cfs-admin.php:1262
+#: includes/class-cfs-dashboard.php:176
+#: includes/class-cfs-exporter.php:236
+msgid "Новая"
+msgstr ""
+
+#: includes/class-cfs-admin.php:700
+#: includes/class-cfs-admin.php:715
+#: includes/class-cfs-admin.php:1263
+#: includes/class-cfs-dashboard.php:177
+#: includes/class-cfs-exporter.php:232
+msgid "Обработана"
+msgstr ""
+
+#: includes/class-cfs-admin.php:721
+msgid "IP"
+msgstr ""
+
+#: includes/class-cfs-admin.php:727
+#: includes/class-cfs-exporter.php:186
+msgid "Страница"
+msgstr ""
+
+#: includes/class-cfs-admin.php:733
+msgid "User Agent"
+msgstr ""
+
+#: includes/class-cfs-admin.php:958
+msgid "Подробнее"
+msgstr ""
+
+#: includes/class-cfs-admin.php:976
+msgid "Настройки заявок"
+msgstr ""
+
+#: includes/class-cfs-admin.php:981
+msgid "Доп. получатели email"
+msgstr ""
+
+#: includes/class-cfs-admin.php:984
+msgid "Email через запятую."
+msgstr ""
+
+#: includes/class-cfs-admin.php:988
+msgid "Тема письма"
+msgstr ""
+
+#: includes/class-cfs-admin.php:991
+msgid "Доступны {site_name} и {form_id}."
+msgstr ""
+
+#: includes/class-cfs-admin.php:995
+msgid "Запрещённые слова"
+msgstr ""
+
+#: includes/class-cfs-admin.php:998
+msgid "По одному слову на строку. Проверяются все текстовые поля заявки."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1002
+msgid "Максимальная длина комментария"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1005
+msgid "Символов в поле «Комментарий». По умолчанию 1000."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1009
+msgid "Текст поля согласия"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1012
+msgid "Текст для поля agreement. Поддерживаются HTML-ссылки: <a href=\"...\">текст</a>."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1016
+msgid "Сохранять IP"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1020
+#: includes/class-cfs-admin.php:1029
+#: includes/class-cfs-field-types.php:716
+msgid "Да"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1025
+msgid "Сохранять User Agent"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1034
+msgid "Стиль полей"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1040
+msgid "Outlined (адаптивная метка)"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1044
+msgid "Underline (подчёркивание)"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1048
+msgid "Outlined (метка сверху)"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1052
+msgid "Filled (заливка)"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1056
+msgid "Outlined (метка внутри)"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1066
+msgid "Отключить стили"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1070
+msgid "Отключить все стили плагина"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1074
+msgid "Отключить стили кнопок (отправить / модальная)"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1079
+msgid "Режим отладки"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1083
+msgid "Включить подробное логирование в консоль браузера"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1085
+msgid "Выводит в консоль (F12) все этапы: валидацию, AJAX-запрос, ответ сервера, привязку ошибок к полям. Отключите на проде."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1108
+msgid "Как это устроено"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1110
+msgid "Форма создаётся в разделе «Заявки → Формы». Её содержимое — обычный текст: всё, что в квадратных скобках, становится полем ввода, всё остальное выводится как HTML."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1113
+msgid "Готовую форму выводит шорткод с её номером:"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1114
+msgid "или"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1117
+msgid "Синтаксис тега"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1120
+msgid "какое это поле; список ниже."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1121
+msgid "поле обязательное. Без звёздочки — необязательное."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1122
+msgid "латиницей; под этим именем значение попадёт в заявку, письмо и CRM. Если не указать — плагин подставит имя по типу."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1123
+msgid "Атрибуты — в любом порядке. Значение в кавычках может содержать пробелы и скобки."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1124
+msgid "комментарий, в форму не попадает."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1125
+msgid "обычная квадратная скобка в тексте."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1128
+msgid "Типы полей"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1132
+msgid "Тип"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1133
+msgid "Что это"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1134
+msgid "Свои атрибуты"
+msgstr ""
+
+#. translators: %s: list of common attributes
+#: includes/class-cfs-admin.php:1159
+#, php-format
+msgid "Общие атрибуты для всех полей ввода: %s."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1165
+msgid "Примеры"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1167
+msgid "Обратный звонок:"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1172
+msgid "Два поля в строку:"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1179
+msgid "Список и согласие:"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1185
+msgid "Мастер в два шага:"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1196
+msgid "UTM-метка из адреса страницы:"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1199
+msgid "Источники: query:параметр, cookie:имя, page:url|title|id, user:email|login|name|id."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1202
+msgid "Подстановки в письмах"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1204
+msgid "В теме и тексте письма работают подстановки в фигурных скобках: имя поля подставит его значение, {all_fields} — таблицу всех полей. Полный список доступных подстановок показан прямо над полями на вкладке «Письма» той формы, которую вы редактируете."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1211
+msgid "HTML в шаблоне"
+msgstr ""
+
+#: includes/class-cfs-admin.php:1213
+msgid "Вокруг полей можно писать обычную разметку: заголовки, абзацы, списки, таблицы, ссылки, картинки. Опасные теги (script, iframe) и обработчики событий вырезаются при сохранении. Поля формы (input, select) вручную вставлять нельзя — их значения всё равно не будут приняты."
+msgstr ""
+
+#: includes/class-cfs-admin.php:1216
+msgid "Хуки для разработчиков"
+msgstr ""
+
+#. translators: 1: current page number, 2: total pages
+#: includes/class-cfs-admin.php:1282
+#, php-format
+msgid "Страница %1$d из %2$d"
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:74
+msgid "Сессия устарела. Обновите страницу и попробуйте снова."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:83
+msgid "Ошибка валидации."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:93
+msgid "Слишком быстрая отправка. Подождите."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:119
+msgid "Недопустимый источник запроса."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:130
+msgid "Слишком много попыток. Попробуйте позже."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:138
+msgid "Неверный идентификатор формы."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:193
+msgid "Пожалуйста, исправьте ошибки в форме."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:200
+#: includes/class-cfs-ajax-handler.php:222
+msgid "Ваше сообщение было отклонено."
+msgstr ""
+
+#: includes/class-cfs-ajax-handler.php:235
+msgid "Ошибка при сохранении данных. Попробуйте позже."
+msgstr ""
+
+#: includes/class-cfs-dashboard.php:66
+msgid "Заявки с сайта"
+msgstr ""
+
+#: includes/class-cfs-dashboard.php:110
+msgid "Обработано"
+msgstr ""
+
+#: includes/class-cfs-dashboard.php:120
+msgid "Заявок пока нет."
+msgstr ""
+
+#: includes/class-cfs-dashboard.php:126
+#: includes/class-cfs-field-types.php:95
+#: includes/legacy/class-cfs-form-builder.php:215
+#: includes/legacy/class-cfs-form-builder.php:416
+msgid "Имя"
+msgstr ""
+
+#: includes/class-cfs-dashboard.php:127
+msgid "Контакт"
+msgstr ""
+
+#: includes/class-cfs-dashboard.php:158
+msgid "Открыть"
+msgstr ""
+
+#: includes/class-cfs-dashboard.php:165
+msgid "Все заявки &rarr;"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:85
+msgid "Текстовое поле"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:107
+#: includes/legacy/class-cfs-form-builder.php:216
+#: includes/legacy/class-cfs-form-builder.php:417
+msgid "Фамилия"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:118
+#: includes/legacy/class-cfs-form-builder.php:217
+#: includes/legacy/class-cfs-form-builder.php:418
+msgid "Отчество"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:162
+#: includes/legacy/class-cfs-form-builder.php:229
+#: includes/legacy/class-cfs-form-builder.php:466
+msgid "Ссылка"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:175
+#: includes/legacy/class-cfs-form-builder.php:225
+#: includes/legacy/class-cfs-form-builder.php:455
+msgid "Число"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:197
+#: includes/legacy/class-cfs-form-builder.php:220
+#: includes/legacy/class-cfs-form-builder.php:421
+msgid "Комментарий"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:209
+msgid "Выпадающий список"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:219
+msgid "Радиокнопки"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:229
+msgid "Группа чекбоксов"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:240
+msgid "Чекбокс"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:249
+#: includes/legacy/class-cfs-form-builder.php:227
+msgid "Согласие"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:260
+msgid "Скрытое поле"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:269
+msgid "Кнопка отправки"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:277
+msgid "Разделитель шага"
+msgstr ""
+
+#: includes/class-cfs-field-types.php:562
+msgid "Обязательное поле."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:600
+msgid "Допустимы только буквы, дефис, апостроф и пробел."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:607
+msgid "Введите корректный номер телефона (10–11 цифр)."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:613
+msgid "Введите корректный email."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:619
+msgid "Введите корректный URL (например, https://…)."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:625
+#: includes/class-cfs-shortcode.php:252
+#: includes/legacy/class-cfs-form-builder.php:180
+msgid "Введите числовое значение."
+msgstr ""
+
+#. translators: %s: minimum value
+#: includes/class-cfs-field-types.php:634
+#, php-format
+msgid "Минимальное значение: %s."
+msgstr ""
+
+#. translators: %s: maximum value
+#: includes/class-cfs-field-types.php:638
+#, php-format
+msgid "Максимальное значение: %s."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:648
+#: includes/class-cfs-shortcode.php:255
+#: includes/legacy/class-cfs-form-builder.php:183
+msgid "Значение не соответствует шагу."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:656
+msgid "Некорректный формат даты."
+msgstr ""
+
+#. translators: %s: minimum date
+#: includes/class-cfs-field-types.php:662
+#, php-format
+msgid "Дата не может быть раньше %s."
+msgstr ""
+
+#. translators: %s: maximum date
+#: includes/class-cfs-field-types.php:666
+#, php-format
+msgid "Дата не может быть позже %s."
+msgstr ""
+
+#. translators: %d: maximum characters
+#: includes/class-cfs-field-types.php:677
+#, php-format
+msgid "Слишком длинное значение. Максимум %d символов."
+msgstr ""
+
+#. translators: %d: minimum characters
+#: includes/class-cfs-field-types.php:682
+#, php-format
+msgid "Слишком короткое значение. Минимум %d символов."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:694
+msgid "Недопустимое значение."
+msgstr ""
+
+#: includes/class-cfs-field-types.php:715
+msgid "Нет"
+msgstr ""
+
+#. translators: %s: field type as written in the template
+#: includes/class-cfs-form-compiler.php:98
+#, php-format
+msgid "Неизвестный тип поля «%s»."
+msgstr ""
+
+#. translators: 1: field name, 2: field type
+#: includes/class-cfs-form-compiler.php:155
+#, php-format
+msgid "Поле «%1$s» типа «%2$s» без атрибута options — задайте варианты в формате options=\"Метка:значение,Метка2:значение2\"."
+msgstr ""
+
+#. translators: 1: role name, 2: field that already claimed it
+#: includes/class-cfs-form-compiler.php:171
+#, php-format
+msgid "Роль «%1$s» уже занята полем «%2$s» — значение этого поля попадёт только в JSON заявки."
+msgstr ""
+
+#: includes/class-cfs-form-compiler.php:199
+msgid "В шаблоне нет ни одного поля — форма не будет выведена."
+msgstr ""
+
+#: includes/class-cfs-form-compiler.php:206
+msgid "В шаблоне нет тега [submit] — кнопка отправки будет добавлена в конец формы."
+msgstr ""
+
+#: includes/class-cfs-form-compiler.php:214
+msgid "В разметке есть незакрытый HTML-тег."
+msgstr ""
+
+#. translators: %s: field name as written in the template
+#: includes/class-cfs-form-compiler.php:281
+#, php-format
+msgid "Недопустимое имя поля «%s»: разрешены латинские буквы, цифры, дефис и подчёркивание, начинаться должно с буквы."
+msgstr ""
+
+#. translators: %s: reserved field name
+#: includes/class-cfs-form-compiler.php:293
+#, php-format
+msgid "Имя «%s» зарезервировано плагином, выберите другое."
+msgstr ""
+
+#. translators: %s: duplicated field name
+#: includes/class-cfs-form-compiler.php:305
+#, php-format
+msgid "Поле с именем «%s» уже есть в форме — имена должны быть уникальными."
+msgstr ""
+
+#. translators: 1: attribute name, 2: field type
+#: includes/class-cfs-form-compiler.php:351
+#, php-format
+msgid "Атрибут «%1$s» не поддерживается типом «%2$s» и будет проигнорирован."
+msgstr ""
+
+#: includes/class-cfs-form-renderer.php:119
+#: includes/legacy/class-cfs-form-builder.php:834
+msgid "Закрыть"
+msgstr ""
+
+#: includes/class-cfs-form-renderer.php:337
+#: includes/legacy/class-cfs-form-builder.php:883
+msgid "Прогресс формы"
+msgstr ""
+
+#: includes/class-cfs-form-renderer.php:819
+#: includes/legacy/class-cfs-form-builder.php:392
+msgid "Отправить"
+msgstr ""
+
+#: includes/class-cfs-form-renderer.php:945
+msgid "Форма содержит ошибки и не выводится:"
+msgstr ""
+
+#: includes/class-cfs-form-renderer.php:1173
+#: includes/legacy/class-cfs-form-builder.php:1856
+msgid "Я даю согласие на обработку персональных данных"
+msgstr ""
+
+#: includes/class-cfs-form.php:502
+#: includes/legacy/class-cfs-form-builder.php:402
+msgid "Спасибо! Мы свяжемся с вами."
+msgstr ""
+
+#: includes/class-cfs-form.php:550
+#: includes/legacy/class-cfs-form-builder.php:407
+msgid "Открыть форму"
+msgstr ""
+
+#. translators: %s: original form title
+#: includes/class-cfs-form.php:720
+#, php-format
+msgid "%s (копия)"
+msgstr ""
+
+#: includes/class-cfs-form.php:803
+msgid "Импортированная форма"
+msgstr ""
+
+#: includes/class-cfs-mailer.php:32
+msgid "Отключено в настройках формы."
+msgstr ""
+
+#: includes/class-cfs-mailer.php:41
+msgid "Не удалось определить получателя."
+msgstr ""
+
+#: includes/class-cfs-mailer.php:63
+msgid "wp_mail() вернул ошибку — проверьте настройки почты сайта."
+msgstr ""
+
+#. translators: %s: comma-separated recipients
+#: includes/class-cfs-mailer.php:71
+#, php-format
+msgid "Отправлено: %s"
+msgstr ""
+
+#. translators: 1: site name, 2: form title
+#: includes/class-cfs-mailer.php:141
+msgid "Новая заявка с сайта {site_name} — форма {form_title}"
+msgstr ""
+
+#: includes/class-cfs-mailer.php:202
+msgid "Просмотреть в панели"
+msgstr ""
+
+#: includes/class-cfs-mailer.php:210
+msgid "Страница:"
+msgstr ""
+
+#: includes/class-cfs-post-type.php:47
+msgid "Искать формы"
+msgstr ""
+
+#: includes/class-cfs-post-type.php:48
+msgid "Формы не найдены"
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:137
+msgid "В шорткоде [contact_form] не указана форма. Используйте [contact_form id=\"12\"]."
+msgstr ""
+
+#. translators: %s: form id or slug from the shortcode
+#: includes/class-cfs-shortcode.php:144
+#, php-format
+msgid "Форма «%s» не найдена — возможно, она была удалена."
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:241
+#: includes/legacy/class-cfs-form-builder.php:169
+msgid "Отправка..."
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:242
+#: includes/legacy/class-cfs-form-builder.php:170
 msgid "Произошла ошибка. Попробуйте ещё раз."
 msgstr ""
 
+#: includes/class-cfs-shortcode.php:243
+#: includes/legacy/class-cfs-form-builder.php:171
 msgid "Обязательное поле"
 msgstr ""
 
+#: includes/class-cfs-shortcode.php:244
+#: includes/legacy/class-cfs-form-builder.php:172
 msgid "Некорректный email"
 msgstr ""
 
+#: includes/class-cfs-shortcode.php:245
+#: includes/legacy/class-cfs-form-builder.php:173
 msgid "Некорректный номер телефона"
 msgstr ""
 
-msgid "Отправка..."
+#: includes/class-cfs-shortcode.php:246
+#: includes/legacy/class-cfs-form-builder.php:174
+msgid "Допустимы только буквы, дефис и пробел."
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:247
+#: includes/legacy/class-cfs-form-builder.php:175
+msgid "Выберите хотя бы один вариант."
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:248
+#: includes/legacy/class-cfs-form-builder.php:176
+msgid "Введите корректный URL (например, https://...)."
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:249
+#: includes/legacy/class-cfs-form-builder.php:177
+msgid "Некорректная дата."
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:250
+#: includes/legacy/class-cfs-form-builder.php:178
+msgid "Дата не может быть раньше "
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:251
+#: includes/legacy/class-cfs-form-builder.php:179
+msgid "Дата не может быть позже "
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:253
+#: includes/legacy/class-cfs-form-builder.php:181
+msgid "Минимальное значение: "
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:254
+#: includes/legacy/class-cfs-form-builder.php:182
+msgid "Максимальное значение: "
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:256
+msgid "Слишком длинное значение."
+msgstr ""
+
+#: includes/class-cfs-shortcode.php:257
+msgid "Слишком короткое значение."
+msgstr ""
+
+#: includes/legacy/class-cfs-form-builder.php:221
+#: includes/legacy/class-cfs-form-builder.php:223
+#: includes/legacy/class-cfs-form-builder.php:228
+#: includes/legacy/class-cfs-form-builder.php:422
+#: includes/legacy/class-cfs-form-builder.php:462
+msgid "Выберите"
+msgstr ""
+
+#: includes/legacy/class-cfs-form-builder.php:222
+msgid "Текст"
+msgstr ""
+
+#: includes/legacy/class-cfs-form-builder.php:226
+#: includes/legacy/class-cfs-form-builder.php:423
+msgid "Согласен"
+msgstr ""
+
+#. translators: %s: first field names of the migrated form
+#: includes/legacy/class-cfs-legacy-adapter.php:328
+#, php-format
+msgid "Форма (%s)"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-adapter.php:329
+msgid "Форма с сайта"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-scanner.php:97
+msgid "Текстовый виджет"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-scanner.php:98
+msgid "виджет — замените шорткод вручную"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:65
+msgid "Миграция форм"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:66
+msgid "Миграция"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:342
+msgid "Миграция форм 2.x → 3.0"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:348
+msgid "Мигрировать нечего — шорткодов старого формата на сайте нет."
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:358
+msgid "Найденные формы"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:360
+msgid "Одинаковые шорткоды объединяются в одну форму. Перед заменой оригинальный текст страницы сохраняется — откатить можно кнопкой ниже."
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:368
+msgid "Где встречается:"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:382
+msgid "Получится шаблон:"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:394
+msgid "Создать формы и заменить шорткоды на страницах?"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:395
+msgid "Мигрировать"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:400
+msgid "Привязка старых заявок"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:402
+msgid "Заявки, отправленные до миграции, не знают о новых формах. Укажите, какой форме соответствует каждый старый идентификатор — тогда фильтры и экспорт будут работать и для них."
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:410
+msgid "Старый идентификатор"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:412
+msgid "Привязать к форме"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:422
+msgid "— не привязывать —"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:433
+msgid "Привязать"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:439
+msgid "Откат"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:440
+msgid "Вернёт содержимое страниц к тому, каким оно было до замены шорткодов. Созданные формы останутся — их можно удалить вручную."
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:448
+msgid "Вернуть исходный текст страниц?"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:449
+msgid "Откатить замену"
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:481
+msgid "Модуль совместимости больше не нужен?"
+msgstr ""
+
+#. translators: 1: date, 2: number of forms, 3: number of pages
+#: includes/legacy/class-cfs-legacy-wizard.php:487
+#, php-format
+msgid "Миграция выполнена %1$s: создано форм — %2$d, заменено шорткодов — %3$d."
+msgstr ""
+
+#: includes/legacy/class-cfs-legacy-wizard.php:496
+msgid "Удалите папку includes/legacy/ в плагине — вместе с ней исчезнут поддержка старого синтаксиса и этот экран. Ядро о них не знает, править код не нужно."
+msgstr ""
+
+#. translators: 1: forms created, 2: shortcodes replaced
+#: includes/legacy/class-cfs-legacy-wizard.php:523
+#, php-format
+msgid "Готово: создано форм — %1$d, заменено шорткодов — %2$d."
+msgstr ""
+
+#. translators: %d: posts restored
+#: includes/legacy/class-cfs-legacy-wizard.php:531
+#, php-format
+msgid "Восстановлено страниц: %d."
+msgstr ""
+
+#. translators: %d: submissions relinked
+#: includes/legacy/class-cfs-legacy-wizard.php:536
+#, php-format
+msgid "Привязано заявок: %d."
 msgstr ""

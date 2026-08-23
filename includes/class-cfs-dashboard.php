@@ -34,6 +34,24 @@ class CFS_Dashboard {
 	public function __construct( CFS_DB $db ) {
 		$this->db = $db;
 		add_action( 'wp_dashboard_setup', array( $this, 'register_widget' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+	}
+
+	/**
+	 * Enqueue the widget's stylesheet, but only on the dashboard screen.
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_assets( string $hook ): void {
+		if ( 'index.php' !== $hook ) {
+			return;
+		}
+		wp_enqueue_style(
+			'cfs-dashboard',
+			CFS_PLUGIN_URL . 'assets/css/cfs-dashboard.css',
+			array(),
+			CFS_VERSION
+		);
 	}
 
 	/**
@@ -78,59 +96,6 @@ class CFS_Dashboard {
 		$new_count   = $this->get_new_count();
 		$submissions = $this->db->get_recent( 10, '' );
 
-		// Inline CSS for dashboard widget badge and status dots.
-		?>
-		<style>
-			.cfs-dashboard-badge {
-				display: inline-block;
-				min-width: 18px;
-				height: 18px;
-				padding: 0 5px;
-				border-radius: 9px;
-				background-color: #d63638;
-				color: #fff;
-				font-size: 11px;
-				font-weight: 600;
-				line-height: 18px;
-				text-align: center;
-				vertical-align: middle;
-				margin-left: 4px;
-			}
-			.cfs-dashboard-summary {
-				display: flex;
-				gap: 16px;
-				margin-bottom: 12px;
-				padding: 10px 12px;
-				background: #f0f0f1;
-				border-radius: 4px;
-			}
-			.cfs-dashboard-summary-item {
-				text-align: center;
-			}
-			.cfs-dashboard-summary-item strong {
-				display: block;
-				font-size: 1.4em;
-				line-height: 1.2;
-			}
-			.cfs-dashboard-summary-item span {
-				font-size: 12px;
-				color: #646970;
-			}
-			.cfs-dw-status {
-				display: inline-block;
-				width: 8px;
-				height: 8px;
-				border-radius: 50%;
-				margin-right: 4px;
-				vertical-align: middle;
-			}
-			.cfs-dw-status--new       { background-color: #2271b1; }
-			.cfs-dw-status--processed { background-color: #00a32a; }
-			.cfs-dw-status--spam      { background-color: #dba617; }
-			#cfs_dashboard_widget .inside { padding-bottom: 0; }
-		</style>
-		<?php
-
 		// Summary counters.
 		$count_processed = $this->db->count_by_status( 'processed' );
 		$count_spam      = $this->db->count_by_status( 'spam' );
@@ -167,11 +132,25 @@ class CFS_Dashboard {
 
 		foreach ( $submissions as $row ) {
 			$view_url = admin_url( 'admin.php?page=cfs-submissions&action=view&id=' . (int) $row->id );
-			$contact  = $row->phone ?? ( $row->email ?? '—' );
+
+			/*
+			 * Absent fields are stored as '' rather than NULL, so a ?? chain
+			 * never falls through — the contact column simply came out blank.
+			 */
+			$contact = '';
+			foreach ( array( $row->phone, $row->email, $row->name ) as $candidate ) {
+				if ( '' !== (string) $candidate ) {
+					$contact = (string) $candidate;
+					break;
+				}
+			}
+			if ( '' === $contact ) {
+				$contact = '—';
+			}
 			echo '<tr>';
 			echo '<td style="padding:6px 8px;">';
 			echo '<span class="cfs-dw-status cfs-dw-status--' . esc_attr( $row->status ) . '" title="' . esc_attr( $this->status_label( $row->status ) ) . '"></span>';
-			echo esc_html( $row->name ?? '—' );
+			echo esc_html( '' !== (string) $row->name ? $row->name : '—' );
 			echo '</td>';
 			echo '<td style="padding:6px 8px;">' . esc_html( $contact ) . '</td>';
 			echo '<td style="padding:6px 8px;"><code style="font-size:11px;">' . esc_html( $row->form_id ) . '</code></td>';

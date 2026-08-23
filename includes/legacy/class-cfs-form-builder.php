@@ -44,8 +44,29 @@ class CFS_Form_Builder {
 	 */
 	public function __construct( CFS_DB $db ) {
 		$this->db = $db;
-		add_shortcode( 'contact_form', array( $this, 'render_shortcode' ) );
+
+		/*
+		 * The shortcode itself belongs to CFS_Shortcode now. This class only
+		 * answers for the 2.x attribute syntax, and only when the shortcode
+		 * names no form — see CFS_Shortcode::render().
+		 */
+		add_filter( 'cfs_render_legacy_form', array( $this, 'render_legacy' ), 10, 2 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_assets' ) );
+	}
+
+	/**
+	 * Render a 2.x-style [contact_form fields="…"] shortcode.
+	 *
+	 * @param string|null $html Rendered HTML from an earlier filter, if any.
+	 * @param array       $atts Raw shortcode attributes.
+	 * @return string|null
+	 */
+	public function render_legacy( $html, $atts ) {
+		if ( is_string( $html ) && '' !== $html ) {
+			return $html;
+		}
+
+		return $this->render_shortcode( is_array( $atts ) ? $atts : array() );
 	}
 
 	/**
@@ -58,13 +79,40 @@ class CFS_Form_Builder {
 	}
 
 	/**
-	 * Enqueue assets only when shortcode was used.
+	 * Enqueue assets when the current request is going to render a form.
+	 *
+	 * Shortcodes run during the_content, i.e. after wp_enqueue_scripts, so the
+	 * $assets_needed flag is always still false at this point on a normal page
+	 * — the stylesheet then had to be enqueued mid-content and ended up in the
+	 * footer, flashing unstyled markup. Scanning the post content up front lets
+	 * the CSS go out in <head> where it belongs.
+	 *
+	 * Forms rendered from widgets, blocks or template calls to do_shortcode()
+	 * are not covered by the scan; those still fall back to the late enqueue in
+	 * render_shortcode().
 	 */
 	public function maybe_enqueue_assets(): void {
-		if ( ! $this->assets_needed ) {
-			return;
+		if ( $this->assets_needed || $this->content_has_shortcode() ) {
+			$this->enqueue_assets();
 		}
-		$this->enqueue_assets();
+	}
+
+	/**
+	 * Whether the post being displayed contains the [contact_form] shortcode.
+	 *
+	 * @return bool
+	 */
+	private function content_has_shortcode(): bool {
+		if ( ! is_singular() ) {
+			return false;
+		}
+
+		$post = get_post();
+		if ( ! $post instanceof WP_Post || '' === (string) $post->post_content ) {
+			return false;
+		}
+
+		return has_shortcode( (string) $post->post_content, 'contact_form' );
 	}
 
 	/**
@@ -257,9 +305,11 @@ class CFS_Form_Builder {
 			'location' => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
 			'calendar' => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>',
 			'lock'     => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
-			'link'     => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+			'link'     => '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13.845 17.2669L10.583 20.5289C9.63594 21.4507 8.36403 21.9625 7.04247 21.9537C5.72091 21.9448 4.45597 21.416 3.52133 20.4816C2.58669 19.5472 2.05751 18.2825 2.04829 16.9609C2.03906 15.6393 2.55052 14.3673 3.47202 13.4199L6.73402 10.155C6.92153 9.96731 7.02682 9.71287 7.02672 9.4476C7.02663 9.18233 6.92116 8.92796 6.73352 8.74046C6.54588 8.55295 6.29144 8.44766 6.02617 8.44775C5.7609 8.44785 5.50653 8.55332 5.31902 8.74096L2.05802 12.0059C0.740293 13.3243 0.00026379 15.1122 0.000732645 16.9762C0.0012015 18.8402 0.74213 20.6277 2.06052 21.9454C3.37891 23.2632 5.16677 24.0032 7.03079 24.0027C8.89481 24.0022 10.6823 23.2613 12 21.9429L15.262 18.6809C15.4442 18.4923 15.545 18.2397 15.5427 17.9775C15.5404 17.7153 15.4352 17.4645 15.2498 17.2791C15.0644 17.0937 14.8136 16.9885 14.5514 16.9863C14.2892 16.984 14.0366 17.0848 13.848 17.2669H13.845Z"/><path d="M21.9441 2.06139C21.2934 1.40621 20.5191 0.88667 19.6662 0.532887C18.8132 0.179104 17.8985 -0.00189024 16.9751 0.000390852C16.0522 -0.00206088 15.1379 0.178469 14.2852 0.531542C13.4324 0.884615 12.6582 1.40323 12.0071 2.05739L8.7401 5.32039C8.55246 5.5079 8.44699 5.76227 8.4469 6.02754C8.44681 6.29281 8.55209 6.54725 8.7396 6.73489C8.92711 6.92253 9.18148 7.028 9.44675 7.02809C9.71202 7.02819 9.96646 6.9229 10.1541 6.73539L13.4191 3.47339C13.8847 3.00504 14.4385 2.63369 15.0485 2.38085C15.6586 2.12801 16.3127 1.99869 16.9731 2.00039C17.9674 2.00072 18.9392 2.29582 19.7658 2.84839C20.5924 3.40096 21.2366 4.18619 21.6169 5.10481C21.9973 6.02344 22.0968 7.03421 21.9028 8.00937C21.7088 8.98452 21.2301 9.88028 20.5271 10.5834L17.2651 13.8454C17.0775 14.033 16.972 14.2875 16.972 14.5529C16.972 14.8183 17.0775 15.0728 17.2651 15.2604C17.4527 15.448 17.7072 15.5534 17.9726 15.5534C18.238 15.5534 18.4925 15.448 18.6801 15.2604L21.9421 12.0004C23.2581 10.6815 23.9974 8.8945 23.9978 7.03131C23.9982 5.16812 23.2596 3.38082 21.9441 2.06139Z"/><path d="M14.2932 8.29316L8.2932 14.2932C8.19769 14.3854 8.12151 14.4957 8.0691 14.6177C8.01669 14.7397 7.98911 14.871 7.98795 15.0037C7.9868 15.1365 8.0121 15.2682 8.06238 15.3911C8.11266 15.514 8.18692 15.6256 8.28081 15.7195C8.3747 15.8134 8.48635 15.8877 8.60925 15.938C8.73215 15.9882 8.86382 16.0136 8.9966 16.0124C9.12938 16.0112 9.2606 15.9837 9.38261 15.9312C9.50461 15.8788 9.61496 15.8027 9.7072 15.7071L15.7072 9.70716C15.8894 9.51856 15.9902 9.26596 15.9879 9.00376C15.9856 8.74156 15.8804 8.49075 15.695 8.30534C15.5096 8.11994 15.2588 8.01477 14.9966 8.01249C14.7344 8.01021 14.4818 8.111 14.2932 8.29316Z"/></svg>',
 			'search'   => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>',
 			'star'     => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+			'arrow-left'  => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+			'arrow-right' => '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
 
 		);
 
@@ -340,6 +390,14 @@ class CFS_Form_Builder {
 			'subtitle'        => '',
 				'fields'          => 'name,phone,email',
 				'button_text'     => __( 'Отправить', 'contact-form-submissions' ),
+				// Multi-step wizard.
+				'steps'             => '',
+				'next_text'         => __( 'Далее', 'contact-form-submissions' ),
+				'back_text'         => __( 'Назад', 'contact-form-submissions' ),
+				'next_icon_before'  => '',
+				'next_icon_after'   => '',
+				'back_icon_before'  => '',
+				'back_icon_after'   => '',
 				'class'           => '',
 				'success_message' => __( 'Спасибо! Мы свяжемся с вами.', 'contact-form-submissions' ),
 				'redirect_url'    => '',
@@ -447,23 +505,47 @@ class CFS_Form_Builder {
 		 *  3. If NO `*` is found, all existing {field}_required values are untouched.
 		 * ───────────────────────────────────────────────────────────────────────
 		 */
-		$raw_tokens         = array_map( 'trim', explode( ',', $atts['fields'] ) );
+		/*
+		 * Multi-step wizard: split `fields` by `|` into step groups.
+		 * A single group (no `|`) → single-step form (backwards-compat).
+		 * Each group is then split by `,` into field tokens.
+		 *
+		 * Example:
+		 *   fields="name*,phone*|comment,email|agreement*"
+		 *   → $step_groups = [
+		 *       ['name', 'phone'],
+		 *       ['comment', 'email'],
+		 *       ['agreement'],
+		 *     ]
+		 */
+		$raw_groups         = array_map( 'trim', explode( '|', $atts['fields'] ) );
+		$step_groups        = array();
 		$star_notation_used = false;
 		$required_overrides = array();
 		$clean_tokens       = array();
 
-		foreach ( $raw_tokens as $token ) {
-			if ( '' === $token ) {
+		foreach ( $raw_groups as $raw_group ) {
+			if ( '' === $raw_group ) {
 				continue;
 			}
-			if ( '*' === substr( $token, -1 ) ) {
-				$field_name                        = rtrim( $token, '*' );
-				$star_notation_used                = true;
-				$required_overrides[ $field_name ] = 'yes';
-			} else {
-				$field_name = $token;
+			$group_tokens = array();
+			foreach ( array_map( 'trim', explode( ',', $raw_group ) ) as $token ) {
+				if ( '' === $token ) {
+					continue;
+				}
+				if ( '*' === substr( $token, -1 ) ) {
+					$field_name                        = rtrim( $token, '*' );
+					$star_notation_used                = true;
+					$required_overrides[ $field_name ] = 'yes';
+				} else {
+					$field_name = $token;
+				}
+				$group_tokens[] = $field_name;
+				$clean_tokens[] = $field_name;
 			}
-			$clean_tokens[] = $field_name;
+			if ( ! empty( $group_tokens ) ) {
+				$step_groups[] = $group_tokens;
+			}
 		}
 
 		if ( $star_notation_used ) {
@@ -482,9 +564,28 @@ class CFS_Form_Builder {
 		// Always keep $atts['fields'] in sync with the clean token list.
 		$atts['fields'] = implode( ',', $clean_tokens );
 
-		// Generate form_id if not provided.
+		/*
+		 * Generate form_id if not provided.
+		 *
+		 * Derived from a hash of the shortcode attributes rather than
+		 * wp_rand(): a random ID changes on every render, so under any page
+		 * cache the frozen HTML kept an ID whose config transient had long
+		 * expired — and every submission was rejected as "unknown form". A
+		 * hash is stable across renders, keeps the admin form filter usable,
+		 * and cannot collide by chance.
+		 *
+		 * Identical shortcodes repeated on one page get a numeric suffix; the
+		 * render order is deterministic, so those stay stable too.
+		 */
 		if ( empty( $atts['form_id'] ) ) {
-			$atts['form_id'] = 'cfs_' . wp_rand( 1000, 9999 );
+			$base_id   = 'cfs_' . substr( md5( (string) wp_json_encode( $atts ) ), 0, 8 );
+			$candidate = $base_id;
+			$suffix    = 2;
+			while ( isset( $this->registered_forms[ $candidate ] ) ) {
+				$candidate = $base_id . '_' . $suffix;
+				++$suffix;
+			}
+			$atts['form_id'] = $candidate;
 		}
 
 		$form_id = sanitize_key( $atts['form_id'] );
@@ -537,43 +638,90 @@ class CFS_Form_Builder {
 		 * TTL: 1 hour — enough for a typical user session.
 		 * Key: cfs_form_config_{form_id}  (see CLAUDE.md § Производительность).
 		 */
-		// Build per-token radio and multicheck options maps for server-side whitelist validation.
+		// Build per-token maps for server-side validation AND admin display.
 		$radio_options_map      = array();
 		$multicheck_options_map = array();
+		$labels_map             = array(); // token → human label for admin detail view
+		$options_labels_map     = array(); // token → [ value => label ] for admin display
+		$select_options_parsed  = array(); // select token → [ value => label ]
+
 		foreach ( $clean_tokens as $token ) {
 			$parsed = $this->parse_field_token( $token );
-			if ( 'radio' === $parsed['base'] ) {
+			$base   = $parsed['base'];
+
+			// Resolve the display label: {field}_name → {field}_label → base label.
+			$name_override = $this->get_field_attr( $token, $base, 'name', $atts, '' );
+			if ( '' !== (string) $name_override ) {
+				$labels_map[ $token ] = (string) $name_override;
+			} else {
+				$labels_map[ $token ] = (string) $this->get_field_attr( $token, $base, 'label', $atts, $this->get_base_label( $base ) );
+			}
+
+			if ( 'radio' === $base ) {
 				$opts = (string) $this->get_field_attr( $token, 'radio', 'options', $atts, $atts['radio_options'] ?? '' );
 				if ( '' !== $opts ) {
-					// Store parsed values (not the raw string) so the AJAX handler
-					// never needs to re-parse and comma-escaping works correctly.
-					$radio_options_map[ $token ] = array_keys( $this->parse_options_string( $opts ) );
+					$parsed_opts = $this->parse_options_string( $opts );
+					/*
+					 * Cast to string: PHP turns decimal array keys into ints, so
+					 * options like "Да:1" produced an int whitelist that never
+					 * matched the string arriving in $_POST under in_array()'s
+					 * strict comparison.
+					 */
+					$radio_options_map[ $token ]  = array_map( 'strval', array_keys( $parsed_opts ) );
+					$options_labels_map[ $token ] = $parsed_opts; // value → label
 				}
-			} elseif ( 'multicheck' === $parsed['base'] ) {
+			} elseif ( 'multicheck' === $base ) {
 				$opts = (string) $this->get_field_attr( $token, 'multicheck', 'options', $atts, $atts['multicheck_options'] ?? '' );
 				if ( '' !== $opts ) {
-					// sanitize_key() matches what the renderer does to checkbox values.
+					$parsed_opts = $this->parse_options_string( $opts );
 					$multicheck_options_map[ $token ] = array_map(
-						'sanitize_key',
-						array_keys( $this->parse_options_string( $opts ) )
+						static function ( $value ): string {
+							return sanitize_key( (string) $value );
+						},
+						array_keys( $parsed_opts )
 					);
+					// Build sanitized-key → label map for admin display.
+					$sanitized_labels = array();
+					foreach ( $parsed_opts as $val => $lbl ) {
+						$sanitized_labels[ sanitize_key( (string) $val ) ] = $lbl;
+					}
+					$options_labels_map[ $token ] = $sanitized_labels;
+				}
+			} elseif ( 'select' === $base ) {
+				$opts = (string) $this->get_field_attr( $token, 'select', 'options', $atts, $atts['select_options'] ?? '' );
+				if ( '' !== $opts ) {
+					$parsed_opts = $this->parse_options_string( $opts );
+					$options_labels_map[ $token ] = $parsed_opts; // value → label
+					$select_options_parsed[ $token ] = $parsed_opts;
 				}
 			}
 		}
 
-		set_transient(
-			'cfs_form_config_' . $form_id,
-			array(
-				'fields'                 => $atts['fields'],
-				'required'               => $required_map,
-				'field_types'            => $field_types,
-				'select_options'         => $atts['select_options'],
-				'radio_options_map'      => $radio_options_map,
-				'multicheck_options_map' => $multicheck_options_map,
-				'constraints'            => $this->build_constraints_map( $clean_tokens, $atts ),
-			),
-			HOUR_IN_SECONDS
+		$form_config = array(
+			'fields'                 => $atts['fields'],
+			'required'               => $required_map,
+			'field_types'            => $field_types,
+			'select_options'         => $atts['select_options'],
+			'radio_options_map'      => $radio_options_map,
+			'multicheck_options_map' => $multicheck_options_map,
+			'constraints'            => $this->build_constraints_map( $clean_tokens, $atts ),
+			'labels'                 => $labels_map,
+			'options_labels'         => $options_labels_map,
 		);
+
+		/*
+		 * Only write when the configuration actually changed — without this the
+		 * shortcode performed a database write on every single page view.
+		 *
+		 * The TTL is a week rather than an hour: the transient is what proves a
+		 * form_id is genuine at submit time, and an hour was short enough that
+		 * a slow visitor, or a page served from cache, could outlive it and get
+		 * their submission rejected.
+		 */
+		$transient_key = 'cfs_form_config_' . $form_id;
+		if ( get_transient( $transient_key ) !== $form_config ) {
+			set_transient( $transient_key, $form_config, WEEK_IN_SECONDS );
+		}
 
 		// Signal that assets are needed.
 		$this->assets_needed = true;
@@ -592,7 +740,13 @@ class CFS_Form_Builder {
 			$atts
 		);
 
-		$html = (string) $this->build_form_html( $form_id, $fields, $atts );
+		// Parse step labels (pipe-separated, parallel to $step_groups).
+		$step_labels = array();
+		if ( '' !== trim( (string) $atts['steps'] ) ) {
+			$step_labels = array_map( 'trim', explode( '|', (string) $atts['steps'] ) );
+		}
+
+		$html = (string) $this->build_form_html( $form_id, $fields, $atts, $step_groups, $step_labels );
 		$html = (string) apply_filters( 'cfs_form_html', $html, $form_id, $atts );
 
 		return $html;
@@ -604,19 +758,31 @@ class CFS_Form_Builder {
 	 * When $atts['container'] === 'dialog', renders a native <dialog> element
 	 * preceded by a trigger <button>. Otherwise renders a plain <div>.
 	 *
-	 * @param string $form_id Form ID.
-	 * @param array  $fields  List of field tokens.
-	 * @param array  $atts    Shortcode attributes.
+	 * Multi-step mode is active when $step_groups has more than one group.
+	 * In that case the form renders a stepper header, wraps each group in
+	 * a <div class="cfs-step"> (first visible, rest hidden), and emits a
+	 * nav bar with Back / Next / Submit buttons instead of a lone Submit.
+	 *
+	 * @param string $form_id     Form ID.
+	 * @param array  $fields      Flat list of field tokens (for single-step and AJAX maps).
+	 * @param array  $atts        Shortcode attributes.
+	 * @param array  $step_groups Array of arrays: step index → tokens. Empty or single → no wizard.
+	 * @param array  $step_labels Parallel list of step labels (same count as $step_groups).
 	 * @return string
 	 */
-	private function build_form_html( string $form_id, array $fields, array $atts ): string {
+	private function build_form_html( string $form_id, array $fields, array $atts, array $step_groups = array(), array $step_labels = array() ): string {
 		$timestamp = time();
 		$is_dialog = 'dialog' === ( $atts['container'] ?? 'div' );
 		$wrap_id   = 'cfs-wrap-' . $form_id;
 
+		$is_multi_step = count( $step_groups ) > 1;
+
 		$wrap_class = 'cfs-form-wrap';
 		if ( $is_dialog ) {
 			$wrap_class .= ' cfs-form-wrap--dialog';
+		}
+		if ( $is_multi_step ) {
+			$wrap_class .= ' cfs-form-wrap--steps';
 		}
 
 		// Field style variant class.
@@ -701,27 +867,62 @@ class CFS_Form_Builder {
 			<input type="hidden" name="cfs_form_id" value="<?php echo esc_attr( $form_id ); ?>">
 			<input type="hidden" name="cfs_timestamp" value="<?php echo esc_attr( (string) $timestamp ); ?>">
 
-			<?php foreach ( $fields as $field ) : ?>
-				<?php echo $this->render_field( $form_id, $field, $atts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-			<?php endforeach; ?>
-
 			<?php
-		$btn_icon_before = $this->render_btn_icon( (string) ( $atts['button_icon_before'] ?? '' ) );
-		$btn_icon_after  = $this->render_btn_icon( (string) ( $atts['button_icon_after'] ?? '' ) );
-		?>
-		<div class="cfs-field cfs-field--submit">
-				<button
-					type="submit"
-					class="cfs-btn cfs-btn--submit<?php echo $atts['button_class'] ? ' ' . esc_attr( implode( ' ', array_map( 'sanitize_html_class', preg_split( '/\s+/', trim( $atts['button_class'] ), -1, PREG_SPLIT_NO_EMPTY ) ) ) ) : ''; ?>"
-					id="cfs-submit-<?php echo esc_attr( $form_id ); ?>"
-				>
-					<?php
-					echo $btn_icon_before; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from internal library
-					echo esc_html( $atts['button_text'] );
-					echo $btn_icon_after; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from internal library
+			$btn_icon_before = $this->render_btn_icon( (string) ( $atts['button_icon_before'] ?? '' ) );
+			$btn_icon_after  = $this->render_btn_icon( (string) ( $atts['button_icon_after'] ?? '' ) );
+			$button_classes  = $this->build_button_classes( 'cfs-btn cfs-btn--submit', (string) ( $atts['button_class'] ?? '' ) );
+			$submit_id       = 'cfs-submit-' . $form_id;
+			?>
+
+			<?php if ( $is_multi_step ) : ?>
+				<?php
+				$total_steps   = count( $step_groups );
+				$show_labels   = ! empty( $step_labels );
+				$stepper_class = $show_labels ? 'cfs-stepper' : 'cfs-stepper cfs-stepper--compact';
+				?>
+				<ol class="<?php echo esc_attr( $stepper_class ); ?>" role="list" aria-label="<?php esc_attr_e( 'Прогресс формы', 'contact-form-submissions' ); ?>">
+					<?php for ( $i = 0; $i < $total_steps; $i++ ) :
+						$is_first   = ( 0 === $i );
+						$label_text = isset( $step_labels[ $i ] ) ? $step_labels[ $i ] : '';
 					?>
-				</button>
-			</div>
+						<li
+							class="cfs-stepper-item<?php echo $is_first ? ' is-active' : ''; ?>"
+							aria-current="<?php echo $is_first ? 'step' : 'false'; ?>"
+						>
+							<span class="cfs-step-num" aria-hidden="true"><?php echo esc_html( (string) ( $i + 1 ) ); ?></span>
+							<?php if ( $show_labels && '' !== $label_text ) : ?>
+								<span class="cfs-step-label"><?php echo esc_html( $label_text ); ?></span>
+							<?php endif; ?>
+						</li>
+					<?php endfor; ?>
+				</ol>
+
+				<?php foreach ( $step_groups as $group_index => $group_tokens ) : ?>
+					<div class="cfs-step" data-step="<?php echo esc_attr( (string) $group_index ); ?>"<?php echo ( 0 === $group_index ) ? '' : ' hidden'; ?>>
+						<?php foreach ( $group_tokens as $field ) : ?>
+							<?php echo $this->render_field( $form_id, $field, $atts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<?php endforeach; ?>
+					</div>
+				<?php endforeach; ?>
+
+				<div class="cfs-step-nav">
+					<?php
+					// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
+					echo $this->render_nav_button( 'back', (string) $atts['back_text'], (string) ( $atts['back_icon_before'] ?? '' ), (string) ( $atts['back_icon_after'] ?? '' ) );
+					echo $this->render_nav_button( 'next', (string) $atts['next_text'], (string) ( $atts['next_icon_before'] ?? '' ), (string) ( $atts['next_icon_after'] ?? '' ) );
+					echo $this->render_submit_button( $submit_id, $button_classes, (string) $atts['button_text'], $btn_icon_before, $btn_icon_after, true );
+					// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+					?>
+				</div>
+			<?php else : ?>
+				<?php foreach ( $fields as $field ) : ?>
+					<?php echo $this->render_field( $form_id, $field, $atts ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php endforeach; ?>
+
+				<div class="cfs-field cfs-field--submit">
+					<?php echo $this->render_submit_button( $submit_id, $button_classes, (string) $atts['button_text'], $btn_icon_before, $btn_icon_after, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
+			<?php endif; ?>
 
 		</form>
 		<?php
@@ -770,6 +971,70 @@ class CFS_Form_Builder {
 	}
 
 	/**
+	 * Build a space-separated class list, sanitising any user-supplied extras.
+	 *
+	 * @param string $base  Trusted base classes (already safe).
+	 * @param string $extra Raw user-supplied class string, may be empty.
+	 * @return string
+	 */
+	private function build_button_classes( string $base, string $extra ): string {
+		$extra = trim( $extra );
+		if ( '' === $extra ) {
+			return $base;
+		}
+		$parts = array_filter( array_map( 'sanitize_html_class', preg_split( '/\s+/', $extra ) ) );
+		return $parts ? $base . ' ' . implode( ' ', $parts ) : $base;
+	}
+
+	/**
+	 * Render a Back/Next nav button. Both share the same icon-before/text/icon-after
+	 * template; the type and text differ. The "back" button starts hidden because
+	 * the first step has no previous step to return to.
+	 *
+	 * @param string $kind        Either 'back' or 'next'.
+	 * @param string $text        Button label.
+	 * @param string $icon_before Icon key for the leading glyph.
+	 * @param string $icon_after  Icon key for the trailing glyph.
+	 * @return string HTML.
+	 */
+	private function render_nav_button( string $kind, string $text, string $icon_before, string $icon_after ): string {
+		$class  = 'cfs-btn cfs-btn--' . $kind;
+		$hidden = ( 'back' === $kind ) ? ' hidden' : '';
+		return sprintf(
+			'<button type="button" class="%s"%s>%s%s%s</button>',
+			esc_attr( $class ),
+			$hidden,
+			$this->render_btn_icon( $icon_before ),
+			esc_html( $text ),
+			$this->render_btn_icon( $icon_after )
+		);
+	}
+
+	/**
+	 * Render the submit button. In multi-step mode it starts hidden and is
+	 * revealed on the final step by the wizard JS.
+	 *
+	 * @param string $id           Button element ID.
+	 * @param string $classes      Pre-built class list.
+	 * @param string $text         Button label.
+	 * @param string $icon_before  Pre-rendered leading SVG (may be empty).
+	 * @param string $icon_after   Pre-rendered trailing SVG (may be empty).
+	 * @param bool   $start_hidden Whether to emit the `hidden` attribute.
+	 * @return string HTML.
+	 */
+	private function render_submit_button( string $id, string $classes, string $text, string $icon_before, string $icon_after, bool $start_hidden ): string {
+		return sprintf(
+			'<button type="submit" class="%s" id="%s"%s>%s%s%s</button>',
+			esc_attr( $classes ),
+			esc_attr( $id ),
+			$start_hidden ? ' hidden' : '',
+			$icon_before,
+			esc_html( $text ),
+			$icon_after
+		);
+	}
+
+	/**
 	 * Dispatch a field token to the correct render method.
 	 *
 	 * The token may be a plain base type ("name") or an indexed variant
@@ -803,7 +1068,7 @@ class CFS_Form_Builder {
 			case 'agreement':
 				return $this->render_agreement_field( $form_id, $field, $atts );
 			case 'hidden':
-				return $this->render_hidden_field( $atts );
+				return $this->render_hidden_field( $field, $atts );
 			case 'text':
 				return $this->render_static_text_field( $field, $atts );
 			case 'radio':
@@ -871,7 +1136,7 @@ class CFS_Form_Builder {
 					placeholder="<?php echo esc_attr( $placeholder ); ?>"
 				<?php endif; ?>
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 			<?php if ( $pattern ) : ?>
@@ -945,7 +1210,7 @@ class CFS_Form_Builder {
 					max="<?php echo esc_attr( $max ); ?>"
 				<?php endif; ?>
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 			>
@@ -1020,7 +1285,7 @@ class CFS_Form_Builder {
 					step="<?php echo esc_attr( $step ); ?>"
 				<?php endif; ?>
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 			>
@@ -1081,7 +1346,7 @@ class CFS_Form_Builder {
 				class="cfs-input cfs-input--phone"
 				placeholder="<?php echo esc_attr( $placeholder ); ?>"
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				autocomplete="tel"
@@ -1150,7 +1415,7 @@ class CFS_Form_Builder {
 					placeholder="<?php echo esc_attr( $placeholder ); ?>"
 				<?php endif; ?>
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				autocomplete="email"
@@ -1215,7 +1480,7 @@ class CFS_Form_Builder {
 					placeholder="<?php echo esc_attr( $placeholder ); ?>"
 				<?php endif; ?>
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 			></textarea>
@@ -1273,7 +1538,7 @@ class CFS_Form_Builder {
 				class="cfs-input cfs-select"
 				aria-label="<?php echo esc_attr( $label ); ?>"
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 			>
@@ -1322,7 +1587,7 @@ class CFS_Form_Builder {
 					value="1"
 					class="cfs-checkbox"
 					<?php if ( $required ) : ?>
-						aria-required="true"
+						required aria-required="true"
 					<?php endif; ?>
 					aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				>
@@ -1338,37 +1603,48 @@ class CFS_Form_Builder {
 	}
 
 	/**
-	 * Render hidden field.
+	 * Render hidden field (supports indexed variants).
 	 *
-	 * @param array $atts Attributes.
+	 * Each instance resolves its own name/value through the standard two-level
+	 * attribute chain, so several hidden fields can coexist:
+	 *
+	 *   [contact_form fields="name*,hidden,hidden_2"
+	 *     hidden_name="utm_source"   hidden_value="google"
+	 *     hidden_2_name="utm_medium" hidden_2_value="cpc"]
+	 *
+	 * @param string $field Full field token (e.g. "hidden", "hidden_2").
+	 * @param array  $atts  Attributes.
 	 * @return string
 	 */
-	private function render_hidden_field( array $atts ): string {
-		if ( empty( $atts['hidden_name'] ) ) {
+	private function render_hidden_field( string $field, array $atts ): string {
+		$parsed = $this->parse_field_token( $field );
+		$base   = $parsed['base'];
+
+		$name  = (string) $this->get_field_attr( $field, $base, 'name', $atts, '' );
+		$value = (string) $this->get_field_attr( $field, $base, 'value', $atts, '' );
+
+		if ( '' === $name ) {
 			return '';
 		}
+
 		return sprintf(
 			'<input type="hidden" name="%s" value="%s">',
-			esc_attr( $atts['hidden_name'] ),
-			esc_attr( $atts['hidden_value'] )
+			esc_attr( $name ),
+			esc_attr( $value )
 		);
 	}
 
 	/**
 	 * Parse a "Label:value,Label 2:value2" options string into an associative array.
 	 *
-	 * Supports escaping commas inside labels / values via:
-	 *   - HTML entity &#44; or &comma; — preferred in shortcode attributes because
-	 *     WordPress's shortcode_parse_atts() runs stripcslashes() on every value,
-	 *     which would otherwise strip a plain backslash-comma escape.
-	 *   - Literal \, — works only when calling this method directly from PHP
-	 *     (e.g. in tests) or when the user writes \\, in the shortcode attribute
-	 *     (stripcslashes turns \\ into \, leaving \, for us to parse).
+	 * Supports escaping commas inside labels / values via HTML entities
+	 * &#44; or &comma; — these survive WordPress's shortcode_parse_atts(),
+	 * which would otherwise strip a plain backslash-comma escape because
+	 * it runs stripcslashes() on every attribute value.
 	 *
-	 * Examples that all produce label "Yes, please":
+	 * Examples that both produce label "Yes, please":
 	 *   options="Yes&#44; please:yes,No:no"
 	 *   options="Yes&comma; please:yes,No:no"
-	 *   options="Yes\\, please:yes,No:no"
 	 *
 	 * @param string $raw Raw options string from shortcode attribute.
 	 * @return array<string,string> Associative array of value => label.
@@ -1378,18 +1654,35 @@ class CFS_Form_Builder {
 			return array();
 		}
 
-		// Replace all supported comma escape markers with a private-use
-		// Unicode placeholder, split on real commas, then restore.
+		// Replace HTML entity comma escapes with a private-use Unicode
+		// placeholder, split on real commas, then restore.
 		$placeholder = "\u{F8FF}";
-		$raw         = str_replace( array( '&#44;', '&comma;', '\\,' ), $placeholder, $raw );
+		$raw         = str_replace( array( '&#44;', '&comma;' ), $placeholder, $raw );
 
 		$result = array();
 		foreach ( explode( ',', $raw ) as $opt ) {
 			$opt   = str_replace( $placeholder, ',', $opt );
 			$parts = explode( ':', $opt, 2 );
+
 			if ( 2 === count( $parts ) ) {
 				$result[ trim( $parts[1] ) ] = trim( $parts[0] );
+				continue;
 			}
+
+			/*
+			 * No colon — treat the text as both label and value rather than
+			 * dropping the option silently, which used to render an empty
+			 * group for options="Да,Нет".
+			 */
+			$label = trim( $parts[0] );
+			if ( '' === $label ) {
+				continue;
+			}
+			$value = sanitize_key( $label );
+			if ( '' === $value ) {
+				$value = (string) ( count( $result ) + 1 );
+			}
+			$result[ $value ] = $label;
 		}
 		return $result;
 	}
@@ -1490,7 +1783,14 @@ class CFS_Form_Builder {
 
 		ob_start();
 		?>
-		<fieldset class="cfs-field cfs-field--radio" aria-describedby="<?php echo esc_attr( $error_id ); ?>">
+		<fieldset
+			class="cfs-field cfs-field--radio"
+			aria-describedby="<?php echo esc_attr( $error_id ); ?>"
+			data-field="<?php echo esc_attr( $field ); ?>"
+			<?php if ( $required ) : ?>
+				data-required="true"
+			<?php endif; ?>
+		>
 			<legend class="cfs-field-legend">
 				<?php echo esc_html( $label ); ?>
 				<?php if ( $required ) : ?>
@@ -1508,7 +1808,7 @@ class CFS_Form_Builder {
 							value="<?php echo esc_attr( $val ); ?>"
 							class="cfs-radio"
 							<?php if ( $required ) : ?>
-								aria-required="true"
+								required aria-required="true"
 							<?php endif; ?>
 						>
 						<span><?php echo esc_html( $text ); ?></span>
@@ -1589,7 +1889,7 @@ class CFS_Form_Builder {
 					value="1"
 					class="cfs-checkbox"
 					<?php if ( $required ) : ?>
-						aria-required="true"
+						required aria-required="true"
 					<?php endif; ?>
 					aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				>
@@ -1650,7 +1950,7 @@ class CFS_Form_Builder {
 					placeholder="<?php echo esc_attr( $placeholder ); ?>"
 				<?php endif; ?>
 				<?php if ( $required ) : ?>
-					aria-required="true"
+					required aria-required="true"
 				<?php endif; ?>
 				aria-describedby="<?php echo esc_attr( $error_id ); ?>"
 				autocomplete="url"

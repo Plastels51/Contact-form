@@ -123,12 +123,12 @@
 	z-index: 2;
 
 	transition:
-		top 0.18s ease,
-		left 0.18s ease,
-		font-size 0.18s ease,
-		font-weight 0.18s ease,
-		color 0.18s ease,
-		padding 0.18s ease,
+		top 0.18s ease-out,
+		left 0.18s ease-out,
+		font-size 0.18s ease-out,
+		font-weight 0.18s ease-out,
+		color 0.18s ease-out,
+		padding 0.18s ease-out,
 		background-color 0.01s 0.09s linear;
 	/* background snaps mid-transition */
 }
@@ -136,22 +136,6 @@
 /* Required asterisk inherits the label's color (gray at rest, blue/red when floated). */
 .cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label .cfs-required {
 	color: inherit;
-}
-
-/* ── Floated state: focused OR has a value ── */
-.cfs-field.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
-	/* Center on the input top border: 0 − 0.375rem = −0.375rem. */
-	top: -0.375rem;
-	left: calc(0.75rem - 0.2rem);
-	/* compensate for added padding */
-
-	font-size: 0.75em;
-	font-weight: 600;
-	color: var(--cfs-accent, #0073aa);
-
-	/* White strip cuts through the input border line. */
-	background-color: var(--cfs-bg, #fff);
-	padding: 0 0.2rem;
 }
 
 /* Error colour on the floated label. */
@@ -169,33 +153,47 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   CHECKBOX  (card-style, same as radio)
+   CARD-STYLE OPTION LABELS
+   Shared by checkbox, radio and multicheck fields — a bordered
+   box that highlights on hover and when the input is checked.
    ───────────────────────────────────────────────────────────── */
-.cfs-field--checkbox .cfs-checkbox-label {
+.cfs-field--checkbox .cfs-checkbox-label,
+.cfs-radio-label,
+.cfs-multicheck-label {
 	display: flex;
 	align-items: center;
 	gap: 0.6rem;
 	padding: 0.55rem 0.9rem;
-	border: 1px solid var(--cfs-border, #bbb);
+	border: var(--cfs-border-type, 1px solid var(--cfs-border, #bbb));
 	border-radius: var(--cfs-radius, 4px);
 	background-color: var(--cfs-bg, #fff);
-	font-size: 0.9em;
-	font-weight: normal;
+	font-size: 0.95em;
 	line-height: 1.4;
 	cursor: pointer;
-	transition: border-color 0.15s ease, background-color 0.15s ease;
+	transition: border-color 0.15s ease-out, background-color 0.15s ease-out;
 	user-select: none;
 	-webkit-user-select: none;
 }
 
-.cfs-field--checkbox .cfs-checkbox-label:hover {
+.cfs-field--checkbox .cfs-checkbox-label {
+	font-size: 0.9em;
+	font-weight: normal;
+}
+
+.cfs-field--checkbox .cfs-checkbox-label:hover,
+.cfs-field--checkbox .cfs-checkbox-label:has(.cfs-checkbox:checked),
+.cfs-radio-label:hover,
+.cfs-radio-label:has(.cfs-radio:checked),
+.cfs-multicheck-label:hover,
+.cfs-multicheck-label:has(.cfs-multicheck-input:checked) {
 	border-color: var(--cfs-accent, #0073aa);
 	background-color: var(--cfs-accent-bg, #f0f7fb);
 }
 
-.cfs-field--checkbox .cfs-checkbox-label:has(.cfs-checkbox:checked) {
-	border-color: var(--cfs-accent, #0073aa);
-	background-color: var(--cfs-accent-bg, #f0f7fb);
+/* Bold + accent text on the selected option. */
+.cfs-radio:checked + span,
+.cfs-multicheck-input:checked + span {
+	color: var(--cfs-accent, #0073aa);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -206,26 +204,32 @@
 }
 
 .cfs-field--agreement .cfs-checkbox-label {
-	display: flex;
-	align-items: center;
-	gap: 0.6rem;
 	padding: 0;
 	border: none;
 	background-color: transparent;
-	font-size: 0.9em;
-	font-weight: normal;
-	line-height: 1.4;
-	cursor: pointer;
-	user-select: none;
-	-webkit-user-select: none;
 }
 
-.cfs-checkbox {
+.cfs-field--agreement .cfs-checkbox-label a {
+	color: var(--cfs-accent, #0073aa);
+	text-decoration: underline;
+}
+
+.cfs-field--agreement .cfs-checkbox-label a:hover {
+	color: var(--cfs-accent-hover, #005c8a);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   OPTION INPUTS  (checkbox, radio, multicheck)
+   ───────────────────────────────────────────────────────────── */
+.cfs-checkbox,
+.cfs-radio,
+.cfs-multicheck-input {
 	width: 1.1rem;
 	height: 1.1rem;
 	flex-shrink: 0;
 	margin: 0;
 	accent-color: var(--cfs-accent, #0073aa);
+	cursor: pointer;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -235,14 +239,14 @@
 	display: block;
 	width: 100%;
 	padding: 0.625rem 0.75rem;
-	border: 1px solid var(--cfs-border, #bbb);
+	border: var( --cfs-border-type, 1px solid var(--cfs-border, #bbb));
 	border-radius: var(--cfs-radius, 4px);
 	font-size: 1em;
 	line-height: 1.4;
 	color: var(--cfs-text, #222);
 	background-color: var(--cfs-bg, #fff);
 	box-sizing: border-box;
-	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .cfs-input:focus {
@@ -253,7 +257,6 @@
 
 .cfs-input:focus-visible {
 	outline: 3px solid var(--cfs-accent, #0073aa);
-	outline-offset: 1px;
 	box-shadow: none;
 }
 
@@ -263,13 +266,7 @@
 .cfs-input--error,
 .cfs-input[aria-invalid="true"] {
 	border-color: var(--cfs-error, #e53e3e);
-	box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.15);
-}
-
-.cfs-input--error:focus,
-.cfs-input[aria-invalid="true"]:focus {
-	border-color: var(--cfs-error-dark, #c0392b);
-	box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.22);
+	box-shadow: 0 0 0 3px #f3dada;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -390,6 +387,56 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
+   ROWS  (.cfs-row)
+   Opt-in horizontal grouping for the template editor: wrap any
+   run of field tags in <div class="cfs-row"> and they share a
+   line. Widths come from the tag: [text a width="1/3"].
+   Fields stack on narrow screens; nothing outside .cfs-row is
+   affected, so existing single-column forms are untouched.
+   ───────────────────────────────────────────────────────────── */
+.cfs-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 1rem;
+	align-items: flex-start;
+}
+
+.cfs-row > .cfs-field {
+	flex: 1 1 100%;
+	min-width: 0;
+}
+
+@media (min-width: 480px) {
+	.cfs-row > .cfs-field {
+		flex: 1 1 0;
+	}
+
+	.cfs-row > .cfs-field--w-1-1 {
+		flex: 0 0 100%;
+	}
+
+	.cfs-row > .cfs-field--w-1-2 {
+		flex: 0 0 calc(50% - 0.5rem);
+	}
+
+	.cfs-row > .cfs-field--w-1-3 {
+		flex: 0 0 calc(33.333% - 0.667rem);
+	}
+
+	.cfs-row > .cfs-field--w-2-3 {
+		flex: 0 0 calc(66.667% - 0.334rem);
+	}
+
+	.cfs-row > .cfs-field--w-1-4 {
+		flex: 0 0 calc(25% - 0.75rem);
+	}
+
+	.cfs-row > .cfs-field--w-3-4 {
+		flex: 0 0 calc(75% - 0.25rem);
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────
    DIALOG WRAPPER  (dialog.cfs-form-wrap--dialog)
    When container="dialog" the shortcode renders a native <dialog>
    element. The ::backdrop pseudo-element provides the overlay.
@@ -404,6 +451,7 @@ dialog.cfs-form-wrap--dialog {
 	max-width: min(560px, 90vw);
 	width: 100%;
 	max-height: 90vh;
+	overflow-x: clip;
 	overflow-y: auto;
 
 	/* Appearance. */
@@ -419,50 +467,12 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	background: rgba(0, 0, 0, 0.55);
 }
 
-/* Close (x) button inside the dialog. */
+/* Close (x) button position — layout only, visuals live in cfs-buttons.css
+   so they are disabled together with the rest of the button styling. */
 .cfs-modal-close {
 	position: absolute;
 	top: 0.625rem;
 	right: 0.625rem;
-	width: 2rem;
-	height: 2rem;
-	padding: 0;
-	background: none;
-	border: 1px solid transparent;
-	border-radius: var(--cfs-radius, 4px);
-	font-size: 1.1em;
-	line-height: 1;
-	color: #888;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.cfs-modal-close:hover {
-	color: var(--cfs-text, #222);
-	border-color: #ccc;
-}
-
-.cfs-modal-close:focus-visible {
-	outline: 3px solid var(--cfs-accent, #0073aa);
-	outline-offset: 1px;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   AGREEMENT FIELD
-   Behaves like a checkbox field; inherits all .cfs-field--checkbox
-   rules. The extra class .cfs-field--agreement allows theme
-   overrides without touching the generic checkbox styling.
-   ───────────────────────────────────────────────────────────── */
-.cfs-field--agreement .cfs-checkbox-label a {
-	color: var(--cfs-accent, #0073aa);
-	text-decoration: underline;
-}
-
-.cfs-field--agreement .cfs-checkbox-label a:hover {
-	color: var(--cfs-accent-hover, #005c8a);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -490,7 +500,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	fill: var(--cfs-icon, #aaa);
 	pointer-events: none;
 	z-index: 3;
-	transition: fill 0.15s ease;
+	transition: fill 0.3s ease-out;
 }
 
 /* Select: centre icon vertically. */
@@ -527,12 +537,6 @@ dialog.cfs-form-wrap--dialog::backdrop {
 .cfs-field--has-icon.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
 	left: calc(0.75rem - 0.2rem);
 	max-width: calc(100% - 1.5rem);
-}
-
-/* Icon turns accent colour when the field is active / focused. */
-.cfs-field--has-icon .cfs-input:focus~svg,
-.cfs-field--has-icon.focused>svg {
-	fill: var(--cfs-accent, #0073aa);
 }
 
 /* Icon turns error colour when the field is invalid. */
@@ -601,55 +605,6 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	gap: 0.4rem;
 }
 
-/* Each option — a bordered card containing the radio + label text. */
-.cfs-radio-label {
-	display: flex;
-	align-items: center;
-	gap: 0.6rem;
-	padding: 0.55rem 0.9rem;
-	border: 1px solid var(--cfs-border, #bbb);
-	border-radius: var(--cfs-radius, 4px);
-	background-color: var(--cfs-bg, #fff);
-	font-size: 0.95em;
-	line-height: 1.4;
-	cursor: pointer;
-	transition: border-color 0.15s ease, background-color 0.15s ease;
-	user-select: none;
-	-webkit-user-select: none;
-}
-
-.cfs-radio-label:hover {
-	border-color: var(--cfs-accent, #0073aa);
-	background-color: var(--cfs-accent-bg, #f0f7fb);
-}
-
-/* Selected card highlight (via :has — works in all modern browsers). */
-.cfs-radio-label:has(.cfs-radio:checked) {
-	border-color: var(--cfs-accent, #0073aa);
-	background-color: var(--cfs-accent-bg, #f0f7fb);
-}
-
-/* Bold text on selected option (sibling selector fallback for older browsers). */
-.cfs-radio:checked+span {
-	font-weight: 600;
-	color: var(--cfs-accent, #0073aa);
-}
-
-/* The radio input itself. */
-.cfs-radio {
-	flex-shrink: 0;
-	width: 1.1rem;
-	height: 1.1rem;
-	margin: 0;
-	accent-color: var(--cfs-accent, #0073aa);
-	cursor: pointer;
-}
-
-/* Error state: highlight the whole group. */
-.cfs-field--radio.cfs-field--has-error .cfs-field-legend {
-	color: var(--cfs-error-dark, #c0392b);
-}
-
 /* ─────────────────────────────────────────────────────────────
    MULTICHECK (checkbox group)
    ───────────────────────────────────────────────────────────── */
@@ -667,47 +622,8 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	margin-top: 0.5rem;
 }
 
-.cfs-multicheck-label {
-	display: flex;
-	align-items: center;
-	gap: 0.6rem;
-	padding: 0.55rem 0.9rem;
-	border: 1px solid var(--cfs-border, #bbb);
-	border-radius: var(--cfs-radius, 4px);
-	background-color: var(--cfs-bg, #fff);
-	font-size: 0.95em;
-	line-height: 1.4;
-	cursor: pointer;
-	transition: border-color 0.15s ease, background-color 0.15s ease;
-	user-select: none;
-	-webkit-user-select: none;
-}
-
-.cfs-multicheck-label:hover {
-	border-color: var(--cfs-accent, #0073aa);
-	background-color: var(--cfs-accent-bg, #f0f7fb);
-}
-
-.cfs-multicheck-label:has(.cfs-multicheck-input:checked) {
-	border-color: var(--cfs-accent, #0073aa);
-	background-color: var(--cfs-accent-bg, #f0f7fb);
-}
-
-.cfs-multicheck-input:checked+span {
-	font-weight: 600;
-	color: var(--cfs-accent, #0073aa);
-}
-
-.cfs-multicheck-input {
-	flex-shrink: 0;
-	width: 1.1rem;
-	height: 1.1rem;
-	margin: 0;
-	accent-color: var(--cfs-accent, #0073aa);
-	cursor: pointer;
-}
-
-/* Error state. */
+/* Error state for radio + multicheck: highlight the group legend. */
+.cfs-field--radio.cfs-field--has-error .cfs-field-legend,
 .cfs-field--multicheck.cfs-field--has-error .cfs-field-legend {
 	color: var(--cfs-error-dark, #c0392b);
 }
@@ -721,4 +637,155 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	font-size: 0.85em;
 	line-height: 1.4;
 	color: var(--cfs-hint, #666);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MULTI-STEP WIZARD
+   Stepper header (progress buttons) + step panels + nav bar.
+   A multi-step form carries the class .cfs-form-wrap--steps.
+   ───────────────────────────────────────────────────────────── */
+
+/* Stepper — horizontal row of numbered circles + labels. */
+.cfs-stepper {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin: 0 0 1.75rem;
+	padding: 0;
+	list-style: none;
+}
+
+/* Stepper item — display-only flex column (circle + label). */
+.cfs-stepper-item {
+	flex: 1 1 0;
+	position: relative;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--cfs-label, #999);
+	font-size: 0.85em;
+	line-height: 1.25;
+	text-align: center;
+}
+
+/* Connector line between items — drawn on every item except the last. */
+.cfs-stepper-item:not(:last-child)::after {
+	content: '';
+	position: absolute;
+	top: 0.9rem;
+	left: 50%;
+	right: -50%;
+	height: 3px;
+	background: var(--cfs-stepper-bg, #eaeaea);
+	transition: background-color 0.25s ease-out;
+}
+
+.cfs-stepper-item.is-complete:not(:last-child)::after {
+	background: var(--cfs-accent, #0073aa);
+}
+
+/* Numbered circle. */
+.cfs-step-num {
+	width: 2rem;
+	height: 2rem;
+	border-radius: 50%;
+	background: var(--cfs-stepper-bg, #eaeaea);
+	color: var(--cfs-label, #999);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	box-sizing: border-box;
+	position: relative;
+	z-index: 2;
+	transition: 0.25s ease-out;
+}
+
+/* Label below the circle (only rendered when `steps` attr is provided). */
+.cfs-step-label {
+	display: block;
+	max-width: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Active state — accent circle, white number, darker label. */
+.cfs-stepper-item.is-active .cfs-step-num,
+.cfs-stepper-item.is-complete .cfs-step-num {
+	background: var(--cfs-accent, #0073aa);
+	color: #fff;
+}
+
+.cfs-stepper-item.is-active,
+.cfs-stepper-item.is-complete {
+	color: var(--cfs-text, #222);
+	font-weight: 600;
+}
+
+/* Completed: replace number with a check glyph drawn from CSS borders. */
+.cfs-stepper-item.is-complete .cfs-step-num {
+	font-size: 0;
+}
+
+.cfs-stepper-item.is-complete .cfs-step-num::before {
+	content: '';
+	display: block;
+	width: 0.7rem;
+	height: 0.38rem;
+	border-left: 2.5px solid #fff;
+	border-bottom: 2.5px solid #fff;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+
+/* Compact mode: no labels — circles only. Used when `steps` attr is empty. */
+.cfs-stepper--compact {
+	justify-content: center;
+	gap: 0;
+}
+
+.cfs-stepper--compact .cfs-stepper-item {
+	flex: 0 0 auto;
+	gap: 0;
+	padding: 0 1.25rem;
+}
+
+.cfs-stepper--compact .cfs-stepper-item:not(:last-child)::after {
+	left: calc(50% + 1.25rem);
+	right: calc(-50% + 1.25rem);
+}
+
+/* Step panels — the `hidden` attribute handles display; no extra rules needed. */
+
+/* Navigation bar — Back / Next / Submit row. */
+.cfs-step-nav {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-top: 1.5rem;
+}
+
+.cfs-step-nav .cfs-btn--back {
+	margin-right: auto;
+}
+
+.cfs-step-nav .cfs-btn--next,
+.cfs-step-nav .cfs-btn--submit {
+	margin-left: auto;
+}
+
+/* When only Next/Submit is visible (first step), it still sits to the right. */
+.cfs-step-nav .cfs-btn--back[hidden] + .cfs-btn--next,
+.cfs-step-nav .cfs-btn--back[hidden] + .cfs-btn--submit {
+	margin-left: auto;
+}
+
+/* Narrow screens: smaller stepper text. */
+@media (max-width: 480px) {
+	.cfs-stepper-item {
+		font-size: 0.74em;
+	}
 }
