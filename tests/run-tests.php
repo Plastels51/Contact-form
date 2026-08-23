@@ -202,7 +202,8 @@ $t->test( 'вторая заявка на ту же роль — предупр�
 
 $t->test( 'дефолтные pattern подставляются', function ( CFS_Test_Runner $a ) {
 	$r = CFS_Form_Compiler::compile( '[name n][email e][phone p][submit]' );
-	$a->same( "[A-Za-zА-ЯЁа-яёЁ\s\-']+", $r['schema']['fields']['n']['attrs']['pattern'] );
+	$a->same( CFS_Field_Types::LETTERS_PATTERN, $r['schema']['fields']['n']['attrs']['pattern'] );
+	$a->same( 'type', $r['schema']['fields']['n']['pattern_from'] );
 	$a->contains( '@', $r['schema']['fields']['e']['attrs']['pattern'] );
 	$a->contains( '\d{3}', $r['schema']['fields']['p']['attrs']['pattern'] );
 	$a->same( 'tel', $r['schema']['fields']['p']['attrs']['autocomplete'] );
@@ -211,6 +212,22 @@ $t->test( 'дефолтные pattern подставляются', function ( CF
 $t->test( 'свой pattern перекрывает дефолтный', function ( CFS_Test_Runner $a ) {
 	$r = CFS_Form_Compiler::compile( '[phone p pattern="\d+"][submit]' );
 	$a->same( '\d+', $r['schema']['fields']['p']['attrs']['pattern'] );
+	$a->same( 'author', $r['schema']['fields']['p']['pattern_from'] );
+} );
+
+$t->test( 'дефолтный класс букв пропускает не только русские имена', function ( CFS_Test_Runner $a ) {
+	// This class is what the browser enforces. The server rule behind it takes
+	// any Unicode letter, so every name the class turns away is one the plugin
+	// would have been glad to store.
+	$re = chr( 1 ) . '^(?:' . CFS_Field_Types::LETTERS_PATTERN . ')$' . chr( 1 ) . 'u';
+
+	foreach ( array( 'Иван Петров-Водкин', 'Ёлкина', 'Олександр Ткачук', 'Śląski', 'İlqar', "O'Neil" ) as $name ) {
+		$a->ok( 1 === preg_match( $re, $name ), $name );
+	}
+
+	foreach ( array( '12345', '<script>', 'ok@mail.ru' ) as $junk ) {
+		$a->ok( 1 !== preg_match( $re, $junk ), $junk );
+	}
 } );
 
 $t->test( 'ограничения min/max/step попадают в схему', function ( CFS_Test_Runner $a ) {
@@ -471,6 +488,41 @@ $t->test( 'имя допускает только буквы, дефис и ап
 	$a->same( '', CFS_Field_Types::validate( $field, "Жанна д'Арк" ) );
 	$a->same( '', CFS_Field_Types::validate( $field, 'Анна-Мария' ) );
 	$a->ok( '' !== CFS_Field_Types::validate( $field, 'Иван123' ) );
+} );
+
+$t->test( 'свой pattern проверяется на сервере', function ( CFS_Test_Runner $a ) {
+	$r     = CFS_Form_Compiler::compile( '[text code pattern="\d{6}"][submit]' );
+	$field = $r['schema']['fields']['code'];
+	$a->same( '', CFS_Field_Types::validate( $field, '123456' ), 'matching value passes' );
+	$a->ok( '' !== CFS_Field_Types::validate( $field, '12345' ), 'short value rejected' );
+	$a->ok( '' !== CFS_Field_Types::validate( $field, 'abcdef' ), 'letters rejected' );
+	$a->same( '', CFS_Field_Types::validate( $field, '' ), 'empty optional value still passes' );
+
+	// The pattern is anchored the way HTML5 anchors it, so a matching prefix is
+	// not a match.
+	$a->ok( '' !== CFS_Field_Types::validate( $field, '1234567' ), 'anchored at both ends' );
+
+	$custom = CFS_Form_Compiler::compile( '[text c pattern="\d{6}" error="Шесть цифр"][submit]' );
+	$a->same( 'Шесть цифр', CFS_Field_Types::validate( $custom['schema']['fields']['c'], 'нет' ) );
+} );
+
+$t->test( 'дефолтный pattern типа на сервере не применяется', function ( CFS_Test_Runner $a ) {
+	// The phone mask sends digits only, while its pattern spells out the
+	// displayed "+7 (999) 999-99-99". Enforcing the type default server-side
+	// would reject every honest submission the form itself produced.
+	$r     = CFS_Form_Compiler::compile( '[phone p][submit]' );
+	$field = $r['schema']['fields']['p'];
+	$a->contains( '\d{3}', (string) $field['attrs']['pattern'], 'the default is still rendered' );
+	$a->same( '', CFS_Field_Types::validate( $field, '79001234567' ), 'digits-only value accepted' );
+} );
+
+$t->test( 'нечитаемый для PCRE pattern не отбивает заявку', function ( CFS_Test_Runner $a ) {
+	// The visitor did not write the regex and cannot fix it, so an unusable
+	// pattern is skipped rather than turned into a rejection.
+	$r     = CFS_Form_Compiler::compile( '[text c pattern="[unclosed"][submit]' );
+	$field = $r['schema']['fields']['c'];
+	$a->same( 'author', $field['pattern_from'] );
+	$a->same( '', CFS_Field_Types::validate( $field, 'что угодно' ) );
 } );
 
 $t->test( 'значение вне списка опций отклоняется', function ( CFS_Test_Runner $a ) {

@@ -24,7 +24,7 @@ class CFS_Form_Compiler {
 	 * Schema format version, stored with every compiled schema and every
 	 * submission so old data stays readable after future changes.
 	 */
-	const SCHEMA_VERSION = 3;
+	const SCHEMA_VERSION = 4;
 
 	/**
 	 * Field names the plugin uses for its own machinery.
@@ -398,24 +398,30 @@ class CFS_Form_Compiler {
 		// cannot emit them twice.
 		unset( $attrs['label'], $attrs['options'], $attrs['role'] );
 
+		// Where the pattern came from decides whether the server enforces it —
+		// see CFS_Field_Types::pattern_error().
+		$pattern_from = isset( $attrs['pattern'] ) && '' !== (string) $attrs['pattern'] ? 'author' : '';
+
 		if ( ! isset( $attrs['pattern'] ) && '' !== (string) $descriptor['pattern'] ) {
 			$attrs['pattern'] = (string) $descriptor['pattern'];
+			$pattern_from     = 'type';
 		}
 		if ( ! isset( $attrs['autocomplete'] ) && '' !== (string) $descriptor['autocomplete'] ) {
 			$attrs['autocomplete'] = (string) $descriptor['autocomplete'];
 		}
 
 		return array(
-			'name'        => $name,
-			'type'        => $type,
-			'label'       => $label,
-			'required'    => (bool) $tag['required'],
-			'role'        => $role,
-			'options'     => $options,
-			'constraints' => $constraints,
-			'attrs'       => $attrs,
-			'multiple'    => (bool) $descriptor['multiple'],
-			'submits'     => (bool) $descriptor['submits'],
+			'name'         => $name,
+			'type'         => $type,
+			'label'        => $label,
+			'required'     => (bool) $tag['required'],
+			'role'         => $role,
+			'options'      => $options,
+			'constraints'  => $constraints,
+			'attrs'        => $attrs,
+			'pattern_from' => $pattern_from,
+			'multiple'     => (bool) $descriptor['multiple'],
+			'submits'      => (bool) $descriptor['submits'],
 		);
 	}
 

@@ -192,7 +192,9 @@ class CFS_Legacy_Wizard {
 		// Keep the pre-migration content so the rollback button can restore it
 		// byte for byte. Only the first migration writes it.
 		if ( '' === (string) get_post_meta( $post_id, self::META_BACKUP, true ) ) {
-			update_post_meta( $post_id, self::META_BACKUP, $content );
+			// Slashed on the way in: update_post_meta() unslashes, and a backup
+			// that lost a level of backslashes would not restore byte for byte.
+			update_post_meta( $post_id, self::META_BACKUP, wp_slash( $content ) );
 		}
 
 		/*
@@ -205,10 +207,13 @@ class CFS_Legacy_Wizard {
 			kses_remove_filters();
 		}
 
+		// wp_update_post() expects slashed content and unslashes it itself; the
+		// value here came out of the database already unslashed, so passing it
+		// straight back would strip a backslash from every escape on the page.
 		$result = wp_update_post(
 			array(
 				'ID'           => $post_id,
-				'post_content' => $updated,
+				'post_content' => wp_slash( $updated ),
 			),
 			true
 		);
@@ -249,7 +254,7 @@ class CFS_Legacy_Wizard {
 			$result = wp_update_post(
 				array(
 					'ID'           => (int) $post_id,
-					'post_content' => $backup,
+					'post_content' => wp_slash( $backup ),
 				),
 				true
 			);

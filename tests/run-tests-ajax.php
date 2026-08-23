@@ -33,6 +33,11 @@ add_filter(
 
 // Rate limiting is exercised by one dedicated test; everywhere else it would
 // simply cut the suite off after five submissions.
+//
+// The existing callbacks are dropped rather than out-prioritised: a site may
+// tighten the limit through this same filter, and any such callback registered
+// at a later priority would win and fail every intake test here.
+remove_all_filters( 'cfs_rate_limit' );
 add_filter( 'cfs_rate_limit', '__return_false', 1 );
 
 $t         = new CFS_Test_Runner();

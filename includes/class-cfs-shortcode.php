@@ -88,6 +88,17 @@ class CFS_Shortcode {
 			return $this->render_missing_notice( $atts );
 		}
 
+		/*
+		 * A form that exists but is not published must not reach a visitor.
+		 * CFS_Ajax_Handler refuses anything but "publish", so rendering a draft
+		 * gives the visitor a form that can only ever answer "Неверный
+		 * идентификатор формы" — they fill it in and lose the work. Refusing to
+		 * draw it at all is the honest outcome, and the author gets told why.
+		 */
+		if ( 'publish' !== get_post_status( $form->get_id() ) ) {
+			return $this->render_unpublished_notice( $form );
+		}
+
 		$this->enqueue_assets();
 
 		$renderer = new CFS_Form_Renderer(
@@ -143,6 +154,26 @@ class CFS_Shortcode {
 				/* translators: %s: form id or slug from the shortcode */
 				esc_html__( 'Форма «%s» не найдена — возможно, она была удалена.', 'contact-form-submissions' ),
 				esc_html( (string) $reference )
+			)
+			. '</p></div>';
+	}
+
+	/**
+	 * Placeholder shown when the shortcode points at an unpublished form.
+	 *
+	 * @param CFS_Form $form Form that resolved but is not published.
+	 * @return string
+	 */
+	private function render_unpublished_notice( CFS_Form $form ): string {
+		if ( ! CFS_Post_Type::user_can_manage() ) {
+			return '<!-- CFS: форма не опубликована -->';
+		}
+
+		return '<div class="cfs-form-broken notice notice-error"><p>'
+			. sprintf(
+				/* translators: %s: form title */
+				esc_html__( 'Форма «%s» не опубликована, поэтому не выводится: заявки по ней всё равно не принимаются.', 'contact-form-submissions' ),
+				esc_html( $form->get_title() )
 			)
 			. '</p></div>';
 	}

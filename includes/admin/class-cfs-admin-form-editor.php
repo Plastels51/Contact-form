@@ -95,10 +95,10 @@ class CFS_Admin_Form_Editor {
 			$form->set_template( (string) wp_unslash( $_POST['cfs_template'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 
-		$form->set_group( CFS_Form::META_AFTER, $this->sanitize_after( (array) ( $_POST['cfs_after'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$form->set_group( CFS_Form::META_MAIL, $this->sanitize_mail( (array) ( $_POST['cfs_mail'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$form->set_group( CFS_Form::META_SETTINGS, $this->sanitize_settings( (array) ( $_POST['cfs_settings'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$form->set_group( CFS_Form::META_INTEGRATIONS, $this->sanitize_integrations( (array) ( $_POST['cfs_integrations'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$form->set_group( CFS_Form::META_AFTER, $this->sanitize_after( (array) wp_unslash( $_POST['cfs_after'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$form->set_group( CFS_Form::META_MAIL, $this->sanitize_mail( (array) wp_unslash( $_POST['cfs_mail'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$form->set_group( CFS_Form::META_SETTINGS, $this->sanitize_settings( (array) wp_unslash( $_POST['cfs_settings'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$form->set_group( CFS_Form::META_INTEGRATIONS, $this->sanitize_integrations( (array) wp_unslash( $_POST['cfs_integrations'] ?? array() ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		$tab = isset( $_POST['cfs_tab'] ) ? sanitize_key( wp_unslash( $_POST['cfs_tab'] ) ) : 'template';
 		// phpcs:enable WordPress.Security.NonceVerification.Missing

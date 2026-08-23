@@ -46,6 +46,23 @@ class CFS_Field_Types {
 	const COMMON_SUPPORTS = array( 'label', 'placeholder', 'default', 'class', 'icon', 'help', 'error', 'role', 'width' );
 
 	/**
+	 * Default HTML5 pattern for the name-like types.
+	 *
+	 * The ranges are Latin (A–z), Latin-1 and Latin Extended-A minus the two
+	 * multiplication signs that sit inside them (À–Ö Ø–ö ø–ſ), and the whole
+	 * Cyrillic block (Ѐ–ӿ), which already contains Ё and ё — the old class
+	 * listed Ё twice and still turned away every visitor whose name carried a
+	 * Ukrainian і, a Polish ł or a Turkish İ. The server-side "letters" rule
+	 * accepts any Unicode letter, so a narrower class here could only ever
+	 * block a name the plugin would have been happy to store.
+	 *
+	 * Written as literal characters rather than \p{L}: the pattern attribute
+	 * was compiled without the unicode flag before the HTML spec settled on
+	 * u/v, and in that reading \p{L} matches the letters of "p{L}" instead.
+	 */
+	const LETTERS_PATTERN = "[A-Za-zÀ-ÖØ-öø-ſЀ-ӿ\s\-']+";
+
+	/**
 	 * Type aliases: alias => canonical type.
 	 *
 	 * "comment" is the 2.x name for what is now "textarea"; keeping the alias
@@ -101,7 +118,7 @@ class CFS_Field_Types {
 				'role'     => 'name',
 				'supports' => array( 'pattern', 'minlength', 'maxlength', 'autocomplete' ),
 				'css'      => 'name',
-				'pattern'  => "[A-Za-zА-ЯЁа-яёЁ\s\-']+",
+				'pattern'  => self::LETTERS_PATTERN,
 			),
 			'surname'    => array(
 				'label'    => __( 'Фамилия', 'contact-form-submissions' ),
@@ -112,7 +129,7 @@ class CFS_Field_Types {
 				'rules'    => array( 'letters' ),
 				'supports' => array( 'pattern', 'minlength', 'maxlength', 'autocomplete' ),
 				'css'      => 'surname',
-				'pattern'  => "[A-Za-zА-ЯЁа-яёЁ\s\-']+",
+				'pattern'  => self::LETTERS_PATTERN,
 			),
 			'patronymic' => array(
 				'label'    => __( 'Отчество', 'contact-form-submissions' ),
@@ -123,7 +140,7 @@ class CFS_Field_Types {
 				'rules'    => array( 'letters' ),
 				'supports' => array( 'pattern', 'minlength', 'maxlength', 'autocomplete' ),
 				'css'      => 'patronymic',
-				'pattern'  => "[A-Za-zА-ЯЁа-яёЁ\s\-']+",
+				'pattern'  => self::LETTERS_PATTERN,
 			),
 
 			// ── Contact ──────────────────────────────────────────────────────
@@ -580,7 +597,66 @@ class CFS_Field_Types {
 			}
 		}
 
+		$error = self::pattern_error( $field, $value );
+		if ( '' !== $error ) {
+			return '' !== (string) ( $field['attrs']['error'] ?? '' )
+				? (string) $field['attrs']['error']
+				: $error;
+		}
+
 		return '';
+	}
+
+	/**
+	 * Check a value against a pattern the form author wrote.
+	 *
+	 * Only author-supplied patterns are enforced, never the defaults a type
+	 * carries. A default describes the *displayed* value — the phone mask sends
+	 * "79991234567" while its pattern spells out "+7 (999) 999-99-99" — so
+	 * applying it to what arrives would reject every honest submission.
+	 *
+	 * An author's own pattern has no such split: whatever they constrained in
+	 * the browser is what the browser sends, and leaving it unchecked meant a
+	 * [text code pattern="\d{6}"] field held only as long as the visitor used a
+	 * browser. curl never had to agree.
+	 *
+	 * @param array $field Compiled field definition.
+	 * @param mixed $value Sanitised value.
+	 * @return string Error message or ''.
+	 */
+	private static function pattern_error( array $field, $value ): string {
+		if ( 'author' !== (string) ( $field['pattern_from'] ?? '' ) || is_array( $value ) ) {
+			return '';
+		}
+
+		$pattern = (string) ( $field['attrs']['pattern'] ?? '' );
+		if ( '' === $pattern ) {
+			return '';
+		}
+
+		/*
+		 * chr(1) as the delimiter: every printable character can legitimately
+		 * appear inside a regex, and escaping the chosen one correctly would
+		 * mean parsing the pattern first. HTML5 anchors the attribute and
+		 * compiles it with unicode semantics, which is what ^(?:…)$ and /u
+		 * reproduce here.
+		 */
+		$regex = chr( 1 ) . '^(?:' . $pattern . ')$' . chr( 1 ) . 'u';
+
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- an unusable pattern is handled below, not reported to the visitor.
+		$match = @preg_match( $regex, (string) $value );
+
+		/*
+		 * false means PCRE refused the pattern outright — an ECMAScript
+		 * construct the two engines do not share, or the backtrack limit. The
+		 * visitor is not the one who wrote it, so the check is skipped rather
+		 * than turned into a rejection nobody can act on.
+		 */
+		if ( false === $match || 1 === $match ) {
+			return '';
+		}
+
+		return __( 'Значение не соответствует требуемому формату.', 'contact-form-submissions' );
 	}
 
 	/**

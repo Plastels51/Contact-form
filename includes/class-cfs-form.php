@@ -219,7 +219,7 @@ class CFS_Form {
 		$post_id = wp_insert_post(
 			array(
 				'post_type'   => CFS_Post_Type::POST_TYPE,
-				'post_title'  => '' !== $title ? $title : __( 'Новая форма', 'contact-form-submissions' ),
+				'post_title'  => wp_slash( '' !== $title ? $title : __( 'Новая форма', 'contact-form-submissions' ) ),
 				'post_status' => 'publish',
 				'post_author' => get_current_user_id(),
 			),
@@ -362,8 +362,15 @@ class CFS_Form {
 			$hash   = (string) get_post_meta( $this->id, self::META_HASH, true );
 
 			// The stored hash guards against a template edited directly in the
-			// database, or a site copied without its meta staying in sync.
-			if ( is_array( $stored ) && ! empty( $stored ) && md5( $this->template ) === $hash ) {
+			// database, or a site copied without its meta staying in sync. The
+			// version guards against the plugin itself moving on: an update that
+			// adds a key to the compiled field leaves every cached schema
+			// without it, and the hash still matches because the template never
+			// changed. Without this check those forms keep serving the old shape
+			// until somebody re-saves them by hand.
+			if ( is_array( $stored ) && ! empty( $stored )
+				&& md5( $this->template ) === $hash
+				&& CFS_Form_Compiler::SCHEMA_VERSION === (int) ( $stored['version'] ?? 0 ) ) {
 				$this->schema = $stored;
 				$this->errors = (array) get_post_meta( $this->id, self::META_ERRORS, true );
 				return $this->schema;
@@ -477,11 +484,19 @@ class CFS_Form {
 
 	/**
 	 * Write the compiled schema to post meta.
+	 *
+	 * Every meta value goes through wp_slash() first. update_post_meta() runs
+	 * wp_unslash() on whatever it is handed — it expects slashed data, the way
+	 * $_POST arrives — so an unslashed value silently loses one level of
+	 * backslashes on the way into the database. That ate the escapes out of the
+	 * default HTML5 patterns: "\+7 \(\d{3}\)…" was stored as "+7 (d{3})…",
+	 * which is no longer a regex a browser can compile, so the pattern was
+	 * dropped and the field lost its client-side validation entirely.
 	 */
 	private function store_schema(): void {
-		update_post_meta( $this->id, self::META_COMPILED, $this->schema );
+		update_post_meta( $this->id, self::META_COMPILED, wp_slash( $this->schema ) );
 		update_post_meta( $this->id, self::META_HASH, md5( $this->template ) );
-		update_post_meta( $this->id, self::META_ERRORS, $this->errors );
+		update_post_meta( $this->id, self::META_ERRORS, wp_slash( $this->errors ) );
 	}
 
 	/* ─────────────────────────────────────────────────────────────────────
@@ -662,7 +677,7 @@ class CFS_Form {
 			wp_update_post(
 				array(
 					'ID'         => $this->id,
-					'post_title' => $this->title,
+					'post_title' => wp_slash( $this->title ),
 				)
 			);
 			$this->slug = (string) get_post_field( 'post_name', $this->id );
@@ -671,7 +686,7 @@ class CFS_Form {
 		$previous = (string) get_post_meta( $this->id, self::META_TEMPLATE, true );
 		if ( $previous !== $this->template ) {
 			$this->push_history( $previous );
-			update_post_meta( $this->id, self::META_TEMPLATE, $this->template );
+			update_post_meta( $this->id, self::META_TEMPLATE, wp_slash( $this->template ) );
 		}
 
 		// Recompile on every save: a warning list can change because of an
@@ -681,7 +696,7 @@ class CFS_Form {
 
 		foreach ( $this->groups as $key => $values ) {
 			if ( null !== $values ) {
-				update_post_meta( $this->id, $key, $values );
+				update_post_meta( $this->id, $key, wp_slash( $values ) );
 			}
 		}
 
@@ -754,7 +769,7 @@ class CFS_Form {
 			)
 		);
 
-		update_post_meta( $this->id, self::META_HISTORY, array_slice( $history, 0, self::HISTORY_LIMIT ) );
+		update_post_meta( $this->id, self::META_HISTORY, wp_slash( array_slice( $history, 0, self::HISTORY_LIMIT ) ) );
 	}
 
 	/**

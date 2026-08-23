@@ -60,6 +60,65 @@ $t->test( 'схема кладётся в мету и переиспользуе
 	$a->same( md5( $form->get_template() ), (string) get_post_meta( $id, CFS_Form::META_HASH, true ) );
 } );
 
+$t->test( 'обратные слэши переживают запись в базу', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	// The compiler produced the right pattern all along; what broke it was the
+	// trip through post meta. update_post_meta() unslashes whatever it is given,
+	// so a value stored without wp_slash() comes back one level of backslashes
+	// poorer — "\+7 \(\d{3}\)…" turns into "+7 (d{3})…", which no browser can
+	// compile as a regex. Reading the schema from memory hides the damage, so
+	// the object cache is dropped first and the form genuinely re-read.
+	$form = cfs_test_make_form( $created, "[name n][phone p]\n[text code pattern=\"\\d{6}\"]\n[submit]" );
+	$id   = $form->get_id();
+
+	$cache = new ReflectionClass( 'CFS_Form' );
+	$prop  = $cache->getProperty( 'cache' );
+	$prop->setAccessible( true );
+	$prop->setValue( null, array() );
+	wp_cache_flush();
+
+	$reloaded = CFS_Form::load( $id );
+
+	// The stored schema is read straight out of post meta, not through the
+	// model: a hash mismatch makes the model quietly recompile, which would
+	// paper over exactly the corruption under test.
+	$stored = get_post_meta( $id, CFS_Form::META_COMPILED, true );
+	$stored = (array) ( $stored['fields'] ?? array() );
+
+	$a->same( CFS_Field_Types::LETTERS_PATTERN, (string) ( $stored['n']['attrs']['pattern'] ?? '' ), 'name pattern in meta' );
+	$a->same( '\\+7 \\(\\d{3}\\) \\d{3}-\\d{2}-\\d{2}', (string) ( $stored['p']['attrs']['pattern'] ?? '' ), 'phone pattern in meta' );
+	$a->same( '\\d{6}', (string) ( $stored['code']['attrs']['pattern'] ?? '' ), 'author pattern in meta' );
+
+	$a->same( '\\d{6}', (string) ( $reloaded->get_field( 'code' )['attrs']['pattern'] ?? '' ), 'author pattern' );
+	$a->ok( false !== strpos( (string) $reloaded->get_template(), 'pattern="\\d{6}"' ), 'template keeps its backslashes' );
+} );
+
+$t->test( 'схема старого формата пересобирается', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$form = cfs_test_make_form( $created, '[name n][submit]' );
+	$id   = $form->get_id();
+
+	// A plugin update that adds a key to the compiled field leaves every cached
+	// schema without it, and the template hash still matches because nobody
+	// edited the template. Only the version says the shape moved on.
+	$stale            = get_post_meta( $id, CFS_Form::META_COMPILED, true );
+	$stale['version'] = CFS_Form_Compiler::SCHEMA_VERSION - 1;
+	unset( $stale['fields']['n']['pattern_from'] );
+	update_post_meta( $id, CFS_Form::META_COMPILED, wp_slash( $stale ) );
+
+	$cache = new ReflectionClass( 'CFS_Form' );
+	$prop  = $cache->getProperty( 'cache' );
+	$prop->setAccessible( true );
+	$prop->setValue( null, array() );
+	wp_cache_flush();
+
+	$reloaded = CFS_Form::load( $id );
+	$a->same( 'type', (string) ( $reloaded->get_field( 'n' )['pattern_from'] ?? '' ), 'recompiled on version mismatch' );
+	$a->same(
+		CFS_Form_Compiler::SCHEMA_VERSION,
+		(int) ( get_post_meta( $id, CFS_Form::META_COMPILED, true )['version'] ?? 0 ),
+		'the fresh schema replaced the stale one'
+	);
+} );
+
 $t->test( 'изменённый напрямую шаблон вызывает перекомпиляцию', function ( CFS_Test_Runner $a ) use ( &$created ) {
 	$form = cfs_test_make_form( $created, '[name n][submit]' );
 	$id   = $form->get_id();

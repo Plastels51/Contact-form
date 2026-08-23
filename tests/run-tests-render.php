@@ -17,6 +17,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/run-tests-runner.php';
 
+// The markup assertions below describe the stock skin. A site that picked
+// another one in Settings would otherwise fail the whole suite on a class name
+// it is entitled to have.
+add_filter( 'pre_option_cfs_style_theme', function () {
+	return 'default';
+} );
+
 $t       = new CFS_Test_Runner();
 $created = array();
 
@@ -360,6 +367,35 @@ $t->test( 'класс из шорткода попадает на обёртку
 		)
 	);
 	$a->contains( 'cfs-form-wrap cfs-form--cols-2', $html );
+} );
+
+$t->test( 'неопубликованная форма не выводится шорткодом', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$form      = CFS_Form::create( 'Черновик', '[name n][submit]' );
+	$created[] = $form->get_id();
+	wp_update_post( array( 'ID' => $form->get_id(), 'post_status' => 'draft' ) );
+
+	$shortcode = new CFS_Shortcode();
+	$atts      = array( 'id' => (string) $form->get_id() );
+
+	// A visitor gets nothing: the intake refuses drafts, so a rendered form
+	// could only take their time and answer with an opaque error.
+	wp_set_current_user( 0 );
+	$out = $shortcode->render( $atts );
+	$a->ok( false === strpos( $out, '<form' ), 'no form for a visitor' );
+
+	// The author gets told why, instead of hunting a form that renders nowhere.
+	$editor = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID' ) );
+	if ( ! empty( $editor ) ) {
+		wp_set_current_user( (int) $editor[0] );
+		$notice = $shortcode->render( $atts );
+		$a->ok( false === strpos( $notice, '<form' ), 'no form for the author either' );
+		$a->contains( 'не опубликована', $notice );
+		wp_set_current_user( 0 );
+	}
+
+	// Publishing it brings the form back.
+	wp_update_post( array( 'ID' => $form->get_id(), 'post_status' => 'publish' ) );
+	$a->contains( '<form', $shortcode->render( $atts ) );
 } );
 
 // ── Cleanup ────────────────────────────────────────────────────────────────

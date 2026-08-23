@@ -17,6 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/run-tests-runner.php';
 
+// The preview assertions describe the stock skin — see run-tests-render.php.
+add_filter( 'pre_option_cfs_style_theme', function () {
+	return 'default';
+} );
+
 require_once ABSPATH . 'wp-admin/includes/plugin.php';
 require_once ABSPATH . 'wp-admin/includes/screen.php';
 require_once ABSPATH . 'wp-admin/includes/template.php';
