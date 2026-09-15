@@ -79,10 +79,29 @@
 @supports (field-sizing: content) {
 	.cfs-style--underline .cfs-textarea {
 		field-sizing: content;
-		min-height: 1lh;
+
+		/*
+		 * The rows attribute is the resting size, so growth is all the field
+		 * can do. With min-height at one line it could also shrink below what
+		 * the author asked for, and the first keystroke collapsed the box.
+		 * --cfs-rows is written onto the element by the renderer; the addend is
+		 * the vertical padding, which min-height includes under border-box.
+		 */
+		min-height: calc(var(--cfs-rows, 2) * 1lh + 1.25rem);
 		max-height: 10lh;
 		resize: none;
 		overflow-y: auto;
+	}
+
+	/*
+	 * An empty field sizes itself to its placeholder, and a placeholder is text
+	 * like any other: "Что произошло, куда уже обращались, какой был ответ"
+	 * wrapped into ten lines, hit max-height, and stood there as a wall until
+	 * the first keystroke replaced it with the real content. While the
+	 * placeholder is what is showing, rows decides the height instead.
+	 */
+	.cfs-style--underline .cfs-textarea:placeholder-shown {
+		field-sizing: fixed;
 	}
 }
 

@@ -170,6 +170,19 @@ $t->test( 'ограничения попадают в атрибуты ввод�
 	$a->contains( 'rows="6"', $html );
 } );
 
+$t->test( 'textarea отдаёт число строк ещё и в CSS', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	// The underline skin lets the field size itself to its content, and CSS
+	// cannot read the rows attribute — without this floor the first keystroke
+	// collapses the box to one line.
+	$html = cfs_render_template( $created, '[textarea c rows="6"][submit]' );
+	$a->contains( '--cfs-rows:6', $html );
+
+	// Same clamp as the attribute: a one-row textarea is a text input.
+	$html = cfs_render_template( $created, '[textarea c rows="1"][submit]' );
+	$a->contains( 'rows="2"', $html );
+	$a->contains( '--cfs-rows:2', $html );
+} );
+
 $t->test( 'select выводит подпись как первую опцию', function ( CFS_Test_Runner $a ) use ( &$created ) {
 	$html = cfs_render_template( $created, '[select* s label="Тема" options="Консультация:consult,Расчёт:calc"][submit]' );
 	$a->contains( '<option value="" disabled selected>— Тема —</option>', $html );

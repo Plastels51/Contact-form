@@ -4,7 +4,7 @@ Tags: contact form, form builder, submissions, shortcode, crm
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.2
-Stable tag: 4.5.1
+Stable tag: 4.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -134,6 +134,17 @@ An integration describes itself once and the plugin draws its settings card, sto
 values, runs it after the submission is saved, retries on failure and logs the result.
 
 == Changelog ==
+
+= 4.5.2 =
+
+**A textarea no longer collapses on the first keystroke.** In the underline skin the field
+sizes itself to its content, with a floor of one line — so a four-row box stood at four
+rows only while it was empty and shrank to one the moment anyone typed. The floor is now
+the author's own `rows`, carried into CSS as a `--cfs-rows` custom property on the element
+because no stylesheet can read the attribute. An empty field also stops sizing itself to
+its placeholder: a long one wrapped into a wall of text that then vanished, so while the
+placeholder is what is showing, `rows` decides the height.
+
 
 = 4.5.1 =
 

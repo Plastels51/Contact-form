@@ -712,14 +712,25 @@ class CFS_Form_Renderer {
 		$icon = CFS_Icons::render( $this->attr( $field, 'icon' ) );
 		$rows = (int) $this->attr( $field, 'rows', '4' );
 
+		$rows = max( 2, $rows );
+
 		$attrs = array(
 			'id'               => $id,
 			'name'             => $this->input_name( $field ),
 			'class'            => 'cfs-input cfs-textarea',
 			'data-cfs-field'   => $name,
-			'rows'             => (string) max( 2, $rows ),
+			'rows'             => (string) $rows,
 			'placeholder'      => $this->attr( $field, 'placeholder' ),
 			'aria-describedby' => $id . '-error',
+
+			/*
+			 * The same number again, for CSS. The underline skin lets the field
+			 * size itself to its content, and a field that can size itself can
+			 * also shrink: without a floor expressed in the author's own rows,
+			 * the first keystroke collapsed a four-row box to one line.
+			 * No stylesheet can read the rows attribute, hence the property.
+			 */
+			'style'            => '--cfs-rows:' . $rows,
 		);
 
 		$maxlength = (string) ( $field['constraints']['maxlength'] ?? '' );
