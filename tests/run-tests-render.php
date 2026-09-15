@@ -82,6 +82,7 @@ $t->test( 'каркас формы и системные поля', function ( C
 	$html = cfs_render_template( $created, '[name* n label="Имя"][submit "Ок"]' );
 
 	$a->contains( '<div class="cfs-form-wrap"', $html );
+	$a->contains( '<div class="cfs-form-body"><form class="cfs-form"', $html );
 	$a->contains( '<form class="cfs-form"', $html );
 	$a->contains( 'novalidate', $html );
 	$a->contains( 'name="cfs_hp_w"', $html );
@@ -370,6 +371,21 @@ $t->test( 'модальный контейнер даёт кнопку и dialog
 	$a->contains( 'class="cfs-modal-close"', $html );
 	$a->contains( 'aria-haspopup="dialog"', $html );
 	$a->contains( 'aria-labelledby="dialog-label"', $html );
+} );
+
+$t->test( 'в модале скроллится форма, а не сам диалог', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template( $created, '[name n][submit]', array( 'container' => 'dialog' ) );
+
+	// Both the close button and the result banner are positioned against the
+	// <dialog>. They only stay put while the scrolling happens below them, in
+	// .cfs-form-body.
+	$close  = strpos( $html, 'class="cfs-modal-close"' );
+	$banner = strpos( $html, 'class="cfs-form-message"' );
+	$body   = strpos( $html, '<div class="cfs-form-body">' );
+
+	$a->ok( false !== $close && false !== $banner && false !== $body, 'все три части на месте' );
+	$a->ok( $close < $body && $banner < $body, 'кнопка и баннер выше скролл-контейнера' );
+	$a->ok( strpos( $html, '<form' ) > $body, 'форма внутри контейнера' );
 } );
 
 $t->test( 'обычный контейнер обходится без aria-labelledby', function ( CFS_Test_Runner $a ) use ( &$created ) {

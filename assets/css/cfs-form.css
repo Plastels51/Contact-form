@@ -474,10 +474,20 @@ dialog.cfs-form-wrap--dialog {
 	max-width: min(560px, 90vw);
 	width: 100%;
 	max-height: 90vh;
-	overflow-x: clip;
-	overflow-y: auto;
 
-	/* Appearance. */
+	/*
+	 * The dialog does not scroll: .cfs-form-body inside it does. The close
+	 * button and the result banner are positioned against this element, so
+	 * while the scrolling happened here they travelled with the content — on a
+	 * long form the ✕ left the screen exactly when a visitor wanted out.
+	 * A clipped column flexbox keeps them and hands the scrolling to the form.
+	 */
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+
+	/* Appearance. The padding is now a fixed frame rather than part of the
+	   scrolling content, so the form is clipped at its inner edge. */
 	padding: 2rem 2rem 2.5rem;
 	border: none;
 	border-radius: var(--cfs-container-radius, 8px);
@@ -490,12 +500,27 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	background: rgba(0, 0, 0, 0.55);
 }
 
+/* The form's own box. Outside a modal it only groups the <form>; inside one it
+   is the scrollport, and min-height: 0 is what lets it shrink below its content
+   in the column flexbox — without it a long form stretches the dialog past
+   max-height and no scrollbar ever appears. */
+dialog.cfs-form-wrap--dialog > .cfs-form-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: clip;
+	overflow-y: auto;
+}
+
 /* Close (x) button position — layout only, visuals live in cfs-buttons.css
-   so they are disabled together with the rest of the button styling. */
+   so they are disabled together with the rest of the button styling.
+
+   Positioned against the dialog, which no longer scrolls, so the corner it is
+   put in is the corner it keeps. */
 .cfs-modal-close {
 	position: absolute;
 	top: 0.625rem;
 	right: 0.625rem;
+	z-index: 4;
 }
 
 /* ─────────────────────────────────────────────────────────────

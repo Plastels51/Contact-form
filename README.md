@@ -102,6 +102,12 @@ and both dialogs resolve to whichever heading carries the ID first — the secon
 would answer to the first one's title. Where that happens, drop the ID from one heading
 and give that window a name another way.
 
+Inside the window the scrolling happens in `.cfs-form-body`, the box around the `<form>`,
+not in the `<dialog>` itself. The close button and the result banner are positioned against
+the dialog, so that is what keeps them on screen however far a long form is scrolled, and
+the dialog's padding frames the window instead of scrolling away with the content. The
+wrapper is rendered for every form; outside a modal it carries no styles of its own.
+
 ### Content that stays put while the steps change
 
 `[step]` divides a template into panels and the wizard shows one at a time, so anything

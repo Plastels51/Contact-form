@@ -4,7 +4,7 @@ Tags: contact form, form builder, submissions, shortcode, crm
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.2
-Stable tag: 4.5.0
+Stable tag: 4.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -134,6 +134,20 @@ An integration describes itself once and the plugin draws its settings card, sto
 values, runs it after the submission is saved, retries on failure and logs the result.
 
 == Changelog ==
+
+= 4.5.1 =
+
+**The form has a box of its own, and in a modal that box is what scrolls.** The `<dialog>`
+used to be its own scroll container, and both the close button and the result banner are
+positioned against it — so on a long or multi-step form they rode up and out of view with
+the content, the ✕ disappearing exactly when a visitor wanted out. The `<form>` is now
+wrapped in `.cfs-form-body`, the dialog clips its overflow, and the scrolling happens
+inside that wrapper. The ✕ keeps its corner, the banner stays visible above the form, and
+the dialog's padding is a fixed frame rather than part of the scrolling content.
+
+The wrapper is rendered for every form, modal or not. A theme writes its CSS against the
+markup, and the markup should not change shape depending on a setting in the admin; outside
+a modal the element simply groups the form and carries no styles of its own.
 
 = 4.5.0 =
 

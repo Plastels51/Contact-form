@@ -140,7 +140,19 @@ class CFS_Form_Renderer {
 		}
 
 		$html .= '<div class="cfs-form-message" role="alert" aria-live="polite" style="display:none;"></div>';
-		$html .= $this->render_form_element();
+
+		/*
+		 * The <form> gets a box of its own. In a modal that box is what scrolls,
+		 * which is the whole point: while the <dialog> was its own scroll
+		 * container, the close button — positioned against the dialog — rode up
+		 * and out of view with the content, and the result banner went with it.
+		 * With the scrollport one level in, both stay where they were put.
+		 *
+		 * Outside a modal it is an inert wrapper, and deliberately so: the
+		 * markup a theme writes CSS against should not change shape depending on
+		 * a setting in the admin.
+		 */
+		$html .= '<div class="cfs-form-body">' . $this->render_form_element() . '</div>';
 		$html .= sprintf( '</%s>', $tag );
 
 		/**

@@ -180,7 +180,15 @@
 	width: 2rem;
 	height: 2rem;
 	padding: 0;
-	background: none;
+
+	/*
+	 * The dialog's own colour rather than none: the button sits over the top of
+	 * the scrollport, and the form passes under it. How far under depends on how
+	 * tall the button renders — a theme that gives buttons a min-height makes it
+	 * hang lower — so the fill is what guarantees the ✕ stays readable instead
+	 * of a line of text showing through it.
+	 */
+	background: var(--cfs-bg, #fff);
 	border: 1px solid transparent;
 	border-radius: var(--cfs-radius, 4px);
 	color: #888;
