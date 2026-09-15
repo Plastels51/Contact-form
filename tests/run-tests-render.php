@@ -84,6 +84,11 @@ $t->test( 'каркас формы и системные поля', function ( C
 	$a->contains( '<div class="cfs-form-wrap"', $html );
 	$a->contains( '<div class="cfs-form-body"><form class="cfs-form"', $html );
 	$a->contains( '<form class="cfs-form"', $html );
+
+	// The attribute belongs to the modal, where the wrapper scrolls. Here it
+	// would tell a smooth-scroll library to stop scrolling the page whenever
+	// the cursor is over the form.
+	$a->lacks( 'data-lenis-prevent', $html );
 	$a->contains( 'novalidate', $html );
 	$a->contains( 'name="cfs_hp_w"', $html );
 	$a->contains( 'name="cfs_hp_x"', $html );
@@ -381,11 +386,15 @@ $t->test( 'в модале скроллится форма, а не сам ди�
 	// .cfs-form-body.
 	$close  = strpos( $html, 'class="cfs-modal-close"' );
 	$banner = strpos( $html, 'class="cfs-form-message"' );
-	$body   = strpos( $html, '<div class="cfs-form-body">' );
+	$body   = strpos( $html, 'class="cfs-form-body"' );
 
 	$a->ok( false !== $close && false !== $banner && false !== $body, 'все три части на месте' );
 	$a->ok( $close < $body && $banner < $body, 'кнопка и баннер выше скролл-контейнера' );
 	$a->ok( strpos( $html, '<form' ) > $body, 'форма внутри контейнера' );
+
+	// Lenis and Locomotive animate the page themselves and never see
+	// overscroll-behavior; without this the page glides behind the open window.
+	$a->contains( 'class="cfs-form-body" data-lenis-prevent', $html );
 } );
 
 $t->test( 'обычный контейнер обходится без aria-labelledby', function ( CFS_Test_Runner $a ) use ( &$created ) {

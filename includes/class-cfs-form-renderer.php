@@ -152,7 +152,18 @@ class CFS_Form_Renderer {
 		 * markup a theme writes CSS against should not change shape depending on
 		 * a setting in the admin.
 		 */
-		$html .= '<div class="cfs-form-body">' . $this->render_form_element() . '</div>';
+		/*
+		 * data-lenis-prevent only in a modal, and only because the element
+		 * scrolls there. Smooth-scroll libraries (Lenis, and Locomotive 5 built
+		 * on it) turn the wheel into their own animation of the page, which
+		 * overscroll-behavior cannot reach: without the attribute the page
+		 * glides along behind the open window. On a form that does not scroll
+		 * the attribute would be actively harmful — the library would stop
+		 * scrolling the page while the cursor is anywhere over the form.
+		 */
+		$body_attrs = $is_dialog ? ' data-lenis-prevent' : '';
+
+		$html .= '<div class="cfs-form-body"' . $body_attrs . '>' . $this->render_form_element() . '</div>';
 		$html .= sprintf( '</%s>', $tag );
 
 		/**

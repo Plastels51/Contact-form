@@ -149,6 +149,15 @@ The wrapper is rendered for every form, modal or not. A theme writes its CSS aga
 markup, and the markup should not change shape depending on a setting in the admin; outside
 a modal the element simply groups the form and carries no styles of its own.
 
+Two things the column layout demanded. The `display` that makes it a column is set on
+`dialog.cfs-form-wrap--dialog[open]`, never on the element itself: the browser hides a
+closed `<dialog>` with `display: none` from its own stylesheet, and any author `display`
+beats it — set unconditionally, it leaves every closed modal form painted on the page,
+outside the top layer and with no `::backdrop`. And the scrollport carries
+`overscroll-behavior: contain` plus `data-lenis-prevent`, because a smooth-scroll library
+(Lenis, Locomotive 5 on top of it) animates the page from wheel events and never consults
+`overscroll-behavior` — without the attribute the page glides along behind the open window.
+
 = 4.5.0 =
 
 **Your icon directory no longer costs you the icons it does not contain.** A directory

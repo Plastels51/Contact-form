@@ -481,9 +481,13 @@ dialog.cfs-form-wrap--dialog {
 	 * while the scrolling happened here they travelled with the content — on a
 	 * long form the ✕ left the screen exactly when a visitor wanted out.
 	 * A clipped column flexbox keeps them and hands the scrolling to the form.
+	 *
+	 * ⚠️ The display declaration lives in the [open] rule below and must stay
+	 * there. The browser hides a closed <dialog> with `display: none` from its
+	 * own stylesheet, and any author `display` on the element itself beats it:
+	 * written here, this one left every closed modal form painted on the page,
+	 * outside the top layer and therefore with no ::backdrop of its own.
 	 */
-	display: flex;
-	flex-direction: column;
 	overflow: hidden;
 
 	/* Appearance. The padding is now a fixed frame rather than part of the
@@ -494,6 +498,12 @@ dialog.cfs-form-wrap--dialog {
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
 	box-sizing: border-box;
 	background: var(--cfs-bg, #fff);
+}
+
+/* Only an open dialog gets a box — see the warning above. */
+dialog.cfs-form-wrap--dialog[open] {
+	display: flex;
+	flex-direction: column;
 }
 
 dialog.cfs-form-wrap--dialog::backdrop {
@@ -509,6 +519,10 @@ dialog.cfs-form-wrap--dialog > .cfs-form-body {
 	min-height: 0;
 	overflow-x: clip;
 	overflow-y: auto;
+
+	/* Stop the scroll from chaining to the page once the form hits its end:
+	   the point of a modal is that the page behind it stays where it was. */
+	overscroll-behavior: contain;
 }
 
 /* Close (x) button position — layout only, visuals live in cfs-buttons.css
