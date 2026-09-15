@@ -1,0 +1,50 @@
+/* =============================================================
+   CFS Admin — detail page layout
+   ============================================================= */
+
+/* Two-column layout: main content + sidebar. */
+.cfs-detail-body {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 1.5rem;
+	margin-top: 1rem;
+}
+
+.cfs-detail-main {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.cfs-detail-sidebar {
+	flex: 0 0 300px;
+	min-width: 0;
+}
+
+/* Stack sidebar below main content on narrow screens. */
+@media (max-width: 782px) {
+	.cfs-detail-sidebar {
+		flex-basis: 100%;
+	}
+}
+
+/* Tighten the form-table inside postboxes. */
+.cfs-detail-body .form-table {
+	margin-top: 0;
+}
+
+.cfs-detail-body .form-table th {
+	width: 140px;
+	padding: 8px 10px 8px 0;
+	white-space: nowrap;
+	vertical-align: top;
+}
+
+.cfs-detail-body .form-table td {
+	padding: 8px 0;
+	vertical-align: top;
+}
+
+.cfs-detail-body .hndle {
+    padding: 0 12px;
+}

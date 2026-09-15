@@ -13,6 +13,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Class CFS_Ajax_Handler
+ *
+ * Order of checks (never reorder, never skip):
+ *
+ *   1. nonce
+ *   2. honeypot            cfs_hp_w / cfs_hp_x must be empty
+ *   3. timestamp           on screen between 3 seconds and a day
+ *   4. HTTP referer        when the browser sent one
+ *   5. rate limiting       recorded BEFORE validation
+ *   6. form lookup         a published form must own the posted id
+ *   7. collect + sanitise  strictly the fields of that form's schema
+ *   8. validation          required, formats, option whitelists, constraints
+ *   9. anti-spam           banned words and the cfs_spam_check filter
+ *
+ * Step 6 comes before the data is read because the schema *is* the whitelist:
+ * anything not described by the form is dropped rather than stored.
  */
 class CFS_Ajax_Handler {
 
@@ -30,490 +45,460 @@ class CFS_Ajax_Handler {
 	 */
 	public function __construct( CFS_DB $db ) {
 		$this->db = $db;
+
 		add_action( 'wp_ajax_cfs_submit_form', array( $this, 'handle_submission' ) );
 		add_action( 'wp_ajax_nopriv_cfs_submit_form', array( $this, 'handle_submission' ) );
+
+		add_action( 'wp_ajax_cfs_refresh_nonce', array( $this, 'refresh_nonce' ) );
+		add_action( 'wp_ajax_nopriv_cfs_refresh_nonce', array( $this, 'refresh_nonce' ) );
 	}
 
 	/**
-	 * Main AJAX handler — runs all security checks in order.
+	 * Issue a fresh submit nonce.
+	 *
+	 * A nonce baked into a page that a full-page cache then serves for hours
+	 * eventually expires, and every visitor of that cached page gets a failed
+	 * submission with no way to recover. The script asks this endpoint for a
+	 * new one and retries once.
+	 */
+	public function refresh_nonce(): void {
+		wp_send_json_success( array( 'nonce' => wp_create_nonce( 'cfs_submit_form' ) ) );
+	}
+
+	/**
+	 * Main AJAX handler.
 	 */
 	public function handle_submission(): void {
-		// 1. Nonce.
-		check_ajax_referer( 'cfs_submit_form', 'nonce' );
-
-		// 2. Honeypot — both fields must be empty.
-		$hp_w = isset( $_POST['cfs_hp_w'] ) ? $_POST['cfs_hp_w'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-		$hp_x = isset( $_POST['cfs_hp_x'] ) ? $_POST['cfs_hp_x'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-		if ( ! empty( $hp_w ) || ! empty( $hp_x ) ) {
-			wp_send_json_error( array( 'message' => __( 'Ошибка валидации.', 'contact-form-submissions' ) ) );
-			return;
+		// ── 1. Nonce ────────────────────────────────────────────────────────
+		if ( ! check_ajax_referer( 'cfs_submit_form', 'nonce', false ) ) {
+			$this->fail( 'nonce', __( 'Сессия устарела. Обновите страницу и попробуйте снова.', 'contact-form-submissions' ) );
 		}
 
-		// 3. Timestamp — at least 3 seconds.
+		// ── 2. Honeypot ─────────────────────────────────────────────────────
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- checked above.
+		$hp_w = isset( $_POST['cfs_hp_w'] ) ? (string) $_POST['cfs_hp_w'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$hp_x = isset( $_POST['cfs_hp_x'] ) ? (string) $_POST['cfs_hp_x'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+
+		if ( '' !== $hp_w || '' !== $hp_x ) {
+			$this->fail( 'honeypot', __( 'Ошибка валидации.', 'contact-form-submissions' ) );
+		}
+
+		// ── 3. Timestamp ────────────────────────────────────────────────────
+		// A missing or zero value is rejected outright: "time() - 0" is a huge
+		// number, so omitting the field used to sail straight past this check.
 		$timestamp = isset( $_POST['cfs_timestamp'] ) ? (int) $_POST['cfs_timestamp'] : 0;
-		if ( ( time() - $timestamp ) < 3 ) {
-			wp_send_json_error( array( 'message' => __( 'Слишком быстрая отправка. Подождите.', 'contact-form-submissions' ) ) );
-			return;
+		$age       = time() - $timestamp;
+
+		if ( $timestamp <= 0 || $age < 3 || $age > DAY_IN_SECONDS ) {
+			$this->fail( 'timing', __( 'Слишком быстрая отправка. Подождите.', 'contact-form-submissions' ) );
 		}
 
-		// 4. HTTP Referer.
-		$referer      = wp_get_referer();
-		$site_host    = wp_parse_url( get_site_url(), PHP_URL_HOST );
-		$referer_host = $referer ? wp_parse_url( $referer, PHP_URL_HOST ) : '';
-		if ( $referer_host !== $site_host ) {
-			wp_send_json_error( array( 'message' => __( 'Недопустимый источник запроса.', 'contact-form-submissions' ) ) );
-			return;
-		}
-
-		// 5. Rate limiting.
-		$ip = $this->get_client_ip();
-		if ( apply_filters( 'cfs_rate_limit', $this->db->is_rate_limited( $ip ), $ip, '' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Слишком много попыток. Попробуйте позже.', 'contact-form-submissions' ) ) );
-			return;
-		}
-
-		// 6. Sanitise inputs.
-		// Extract form_id and page_url first (not in the cfs_ field loop).
-		$raw_form_id = isset( $_POST['cfs_form_id'] ) ? sanitize_key( wp_unslash( $_POST['cfs_form_id'] ) ) : '';
-		$page_url    = isset( $_POST['page_url'] ) ? esc_url_raw( wp_unslash( $_POST['page_url'] ) ) : '';
-
-		/*
-		 * Collect all cfs_* POST fields dynamically.
-		 *
-		 * Skipped keys: system / honeypot fields that are never form data.
-		 * Remaining keys are stripped of the "cfs_" prefix to get the field token
-		 * (e.g. "cfs_comment_2" → "comment_2"), then the base type is derived
-		 * by stripping any trailing "_N" suffix (e.g. "comment_2" → "comment").
-		 *
-		 * Sanitisation is applied per base type:
-		 *   email   → sanitize_email()
-		 *   comment → sanitize_textarea_field()
-		 *   checkbox presence → hardcoded '1' (unchecked = not sent)
-		 *   agreement presence → hardcoded '1' (unchecked = not sent)
-		 *   all others → sanitize_text_field()
-		 */
-		$skip_cfs_keys = array( 'cfs_hp_w', 'cfs_hp_x', 'cfs_timestamp', 'cfs_form_id' );
-		$field_data    = array();
-
-		foreach ( $_POST as $post_key => $post_value ) { // phpcs:ignore WordPress.Security.NonceVerification
-			if ( strpos( $post_key, 'cfs_' ) !== 0 ) {
-				continue;
-			}
-			if ( in_array( $post_key, $skip_cfs_keys, true ) ) {
-				continue;
-			}
-
-			$field_token = substr( sanitize_key( $post_key ), 4 ); // strip "cfs_" → e.g. "comment_2".
-			if ( '' === $field_token ) {
-				continue;
-			}
-
-			$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token ); // "comment_2" → "comment".
-
-			// Multicheck sends an array of checked values; join to comma-separated string.
-			if ( 'multicheck' === $base_type && is_array( $post_value ) ) {
-				$sanitized_vals = array();
-				foreach ( $post_value as $v ) {
-					$clean = sanitize_key( wp_unslash( (string) $v ) );
-					if ( '' !== $clean ) {
-						$sanitized_vals[] = $clean;
-					}
-				}
-				$field_data[ $field_token ] = implode( ',', $sanitized_vals );
-				continue;
-			}
-
-			$post_value = is_array( $post_value ) ? '' : (string) $post_value;
-
-			switch ( $base_type ) {
-				case 'email':
-					$field_data[ $field_token ] = sanitize_email( wp_unslash( $post_value ) );
-					break;
-				case 'checkbox':
-				case 'agreement':
-					// Checked checkboxes/agreements send value="1"; unchecked are absent from POST.
-					$field_data[ $field_token ] = '1';
-					break;
-				case 'comment':
-					$field_data[ $field_token ] = sanitize_textarea_field( wp_unslash( $post_value ) );
-					break;
-				case 'url':
-					$field_data[ $field_token ] = esc_url_raw( wp_unslash( $post_value ) );
-					break;
-				default:
-					$field_data[ $field_token ] = sanitize_text_field( wp_unslash( $post_value ) );
-					break;
-			}
-		}
-
-		// Collect non-cfs_ extra fields (e.g. custom hidden inputs).
-		$extra_non_cfs = array();
-		foreach ( $_POST as $key => $value ) { // phpcs:ignore WordPress.Security.NonceVerification
-			if ( strpos( $key, 'cfs_' ) !== 0 && ! in_array( $key, array( 'action', 'nonce', 'page_url' ), true ) ) {
-				$extra_non_cfs[ sanitize_key( $key ) ] = sanitize_text_field( wp_unslash( (string) $value ) );
-			}
-		}
-
-		/*
-		 * Retrieve cached form configuration (written by CFS_Form_Builder when
-		 * the shortcode was rendered). Used in steps 7 and 8.
-		 *
-		 * If the transient is missing (expired / forged form_id), $form_config
-		 * will be false. Step 7 skips config-dependent checks gracefully;
-		 * step 8 will then reject the request.
-		 */
-		$form_config = ! empty( $raw_form_id )
-			? get_transient( 'cfs_form_config_' . $raw_form_id )
-			: false;
-
-		// 7. Server-side validation.
-		$errors = array();
-
-		// ── Required-field validation (driven by cached form config) ────────────
-		if ( is_array( $form_config ) ) {
-			$form_fields  = array_map( 'trim', explode( ',', (string) $form_config['fields'] ) );
-			$required_map = is_array( $form_config['required'] ) ? $form_config['required'] : array();
-
-			foreach ( $form_fields as $field_token ) {
-				if ( 'yes' !== ( $required_map[ $field_token ] ?? 'no' ) ) {
-					continue; // Not required — skip.
-				}
-
-				// text fields are display-only — no value submitted, skip always.
-				$field_type = isset( $form_config['field_types'][ $field_token ] )
-					? (string) $form_config['field_types'][ $field_token ]
-					: '';
-				if ( 'text' === $field_type ) {
-					continue;
-				}
-
-				$value = (string) ( $field_data[ $field_token ] ?? '' );
-				if ( '' === $value ) {
-					$error_msg              = __( 'Обязательное поле.', 'contact-form-submissions' );
-					$errors[ $field_token ] = apply_filters(
-						'cfs_validate_field',
-						$error_msg,
-						$field_token,
-						$value,
-						$raw_form_id
-					);
-				}
-			}
-		}
-
-		// ── Name / surname / patronymic: only letters, hyphens, apostrophes ─────
-		foreach ( $field_data as $field_token => $value ) {
-			$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-			if ( ! in_array( $base_type, array( 'name', 'surname', 'patronymic' ), true ) ) {
-				continue;
-			}
-			if ( ! empty( $value ) && ! preg_match( '/^[\p{L}\s\-\']+$/u', $value ) ) {
-				$error_msg              = __( 'Некорректное значение поля.', 'contact-form-submissions' );
-				$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
-			}
-		}
-
-		// ── Phone: 10–11 digits after stripping formatting ───────────────────────
-		foreach ( $field_data as $field_token => $value ) {
-			$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-			if ( 'phone' !== $base_type || empty( $value ) ) {
-				continue;
-			}
-			$digits = (string) preg_replace( '/\D/', '', $value );
-			if ( ! $digits || strlen( $digits ) < 10 || strlen( $digits ) > 11 ) {
-				$error_msg              = __( 'Введите корректный номер телефона (10–11 цифр).', 'contact-form-submissions' );
-				$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
-			}
-		}
-
-		// ── Email format ─────────────────────────────────────────────────────────
-		foreach ( $field_data as $field_token => $value ) {
-			$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-			if ( 'email' !== $base_type || empty( $value ) ) {
-				continue;
-			}
-			if ( ! is_email( $value ) ) {
-				$error_msg              = __( 'Введите корректный email.', 'contact-form-submissions' );
-				$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
-			}
-		}
-
-		// ── Comment length ───────────────────────────────────────────────────────
-		$max_comment = (int) get_option( 'cfs_max_comment_length', 1000 );
-		foreach ( $field_data as $field_token => $value ) {
-			$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-			if ( 'comment' !== $base_type || empty( $value ) ) {
-				continue;
-			}
-			if ( mb_strlen( $value ) > $max_comment ) {
-				$error_msg              = sprintf(
-					/* translators: %d: max characters */
-					__( 'Комментарий слишком длинный. Максимум %d символов.', 'contact-form-submissions' ),
-					$max_comment
-				);
-				$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
-			}
-		}
-
-		// ── Select: whitelist — only values registered in the shortcode ──────────
-		if ( is_array( $form_config ) && ! empty( $form_config['select_options'] ) ) {
-			$allowed_vals = array();
-			foreach ( explode( ',', (string) $form_config['select_options'] ) as $opt ) {
-				$parts = explode( ':', trim( $opt ), 2 );
-				if ( 2 === count( $parts ) ) {
-					$allowed_vals[] = trim( $parts[1] );
-				}
-			}
-			foreach ( $field_data as $field_token => $value ) {
-				$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-				if ( 'select' !== $base_type || empty( $value ) ) {
-					continue;
-				}
-				if ( ! in_array( $value, $allowed_vals, true ) ) {
-					$error_msg              = __( 'Недопустимое значение.', 'contact-form-submissions' );
-					$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
-				}
-			}
-		}
-
-		// ── Radio: value whitelist ─── only registered option values allowed ───
-		// The map stores a pre-parsed array of allowed values (set by CFS_Form_Builder),
-		// so no re-parsing is needed here. Comma-escaping is handled at build time.
-		if ( is_array( $form_config ) && ! empty( $form_config['radio_options_map'] ) ) {
-			$radio_map = (array) $form_config['radio_options_map'];
-			foreach ( $field_data as $field_token => $value ) {
-				$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-				if ( 'radio' !== $base_type || empty( $value ) ) {
-					continue;
-				}
-				if ( ! isset( $radio_map[ $field_token ] ) ) {
-					continue;
-				}
-				$allowed_vals = (array) $radio_map[ $field_token ];
-				if ( ! in_array( $value, $allowed_vals, true ) ) {
-					$error_msg              = __( 'Недопустимое значение.', 'contact-form-submissions' );
-					$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
-				}
-			}
-		}
-
-		// ── Multicheck: each selected value must be in the whitelist ────────────
-		if ( is_array( $form_config ) && ! empty( $form_config['multicheck_options_map'] ) ) {
-			$mcheck_map = (array) $form_config['multicheck_options_map'];
-			foreach ( $field_data as $field_token => $value ) {
-				$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-				if ( 'multicheck' !== $base_type || empty( $value ) ) {
-					continue;
-				}
-				if ( ! isset( $mcheck_map[ $field_token ] ) ) {
-					continue;
-				}
-				$allowed_vals = (array) $mcheck_map[ $field_token ];
-				foreach ( explode( ',', $value ) as $selected ) {
-					if ( ! in_array( $selected, $allowed_vals, true ) ) {
-						$error_msg              = __( 'Недопустимое значение.', 'contact-form-submissions' );
-						$errors[ $field_token ] = apply_filters( 'cfs_validate_field', $error_msg, $field_token, $value, $raw_form_id );
-						break;
-					}
-				}
-			}
-		}
-
-		// ── Date: format + optional min/max ──────────────────────────────────────
-		// ── Number: numeric + optional min/max/step ───────────────────────────────
-		if ( is_array( $form_config ) && ! empty( $form_config['constraints'] ) ) {
-			foreach ( (array) $form_config['constraints'] as $field_token => $constraint ) {
-				$value     = (string) ( $field_data[ $field_token ] ?? '' );
-				$con_type  = (string) ( $constraint['type'] ?? '' );
-
-				if ( '' === $value ) {
-					continue; // Empty optional field — skip.
-				}
-
-				if ( 'date' === $con_type ) {
-					// Validate Y-m-d format.
-					$date_obj = \DateTime::createFromFormat( 'Y-m-d', $value );
-					if ( ! $date_obj || $date_obj->format( 'Y-m-d' ) !== $value ) {
-						$errors[ $field_token ] = __( 'Некорректный формат даты.', 'contact-form-submissions' );
-						continue;
-					}
-					if ( ! empty( $constraint['min'] ) && $value < $constraint['min'] ) {
-						/* translators: %s: minimum date */
-						$errors[ $field_token ] = sprintf( __( 'Дата не может быть раньше %s.', 'contact-form-submissions' ), $constraint['min'] );
-					} elseif ( ! empty( $constraint['max'] ) && $value > $constraint['max'] ) {
-						/* translators: %s: maximum date */
-						$errors[ $field_token ] = sprintf( __( 'Дата не может быть позже %s.', 'contact-form-submissions' ), $constraint['max'] );
-					}
-				} elseif ( 'number' === $con_type ) {
-					if ( ! is_numeric( $value ) ) {
-						$errors[ $field_token ] = __( 'Введите числовое значение.', 'contact-form-submissions' );
-						continue;
-					}
-					$num = (float) $value;
-					$con_min  = $constraint['min'] ?? '';
-					$con_max  = $constraint['max'] ?? '';
-					if ( '' !== $con_min && $num < (float) $con_min ) {
-						/* translators: %s: minimum number */
-						$errors[ $field_token ] = sprintf( __( 'Минимальное значение: %s.', 'contact-form-submissions' ), $con_min );
-					} elseif ( '' !== $con_max && $num > (float) $con_max ) {
-						/* translators: %s: maximum number */
-						$errors[ $field_token ] = sprintf( __( 'Максимальное значение: %s.', 'contact-form-submissions' ), $con_max );
-					}
-				}
-			}
-		}
-
-
-		// ── Banned words → mark as spam ─────────────────────────────────────────
-		$banned_words_raw = get_option( 'cfs_banned_words', '' );
-		if ( ! empty( $banned_words_raw ) ) {
-			$banned           = array_filter( array_map( 'trim', explode( "\n", (string) $banned_words_raw ) ) );
-			$content_to_check = implode( ' ', array(
-				$field_data['name']    ?? '',
-				$field_data['comment'] ?? '',
-				$field_data['email']   ?? '',
-			) );
-			foreach ( $banned as $word ) {
-				if ( $word && stripos( $content_to_check, $word ) !== false ) {
-					$is_spam = apply_filters( 'cfs_spam_check', true, array(), $raw_form_id );
-					if ( $is_spam ) {
-						wp_send_json_error( array( 'message' => __( 'Ваше сообщение было отклонено.', 'contact-form-submissions' ) ) );
-						return;
-					}
-				}
-			}
-		}
-
-		// Return all validation errors at once so the client can highlight fields.
-		if ( ! empty( $errors ) ) {
-			wp_send_json_error(
+		// ── 4. Referer ──────────────────────────────────────────────────────
+		// Only enforced when the browser actually sent one: privacy settings,
+		// extensions and a "no-referrer" policy legitimately strip the header,
+		// and rejecting those visitors breaks the form for them.
+		$referer = wp_get_referer();
+		if ( $referer ) {
+			$referer_host  = (string) wp_parse_url( $referer, PHP_URL_HOST );
+			$allowed_hosts = array_filter(
 				array(
-					'message' => __( 'Пожалуйста, исправьте ошибки в форме.', 'contact-form-submissions' ),
-					'errors'  => $errors,
+					(string) wp_parse_url( get_site_url(), PHP_URL_HOST ),
+					(string) wp_parse_url( home_url(), PHP_URL_HOST ),
 				)
 			);
-			return;
+
+			/**
+			 * Filter the hostnames accepted as a submission source.
+			 *
+			 * @param array  $allowed_hosts Accepted hostnames.
+			 * @param string $referer_host  Hostname from the Referer header.
+			 */
+			$allowed_hosts = (array) apply_filters( 'cfs_allowed_referer_hosts', $allowed_hosts, $referer_host );
+
+			if ( ! in_array( $referer_host, $allowed_hosts, true ) ) {
+				$this->fail( 'referer', __( 'Недопустимый источник запроса.', 'contact-form-submissions' ) );
+			}
 		}
 
-		// 8. form_id validation — must exist in the transient cache.
-		// A missing transient means the form was never rendered by this plugin
-		// (expired session, forged request, etc.).
-		if ( empty( $raw_form_id ) || false === $form_config ) {
-			wp_send_json_error( array( 'message' => __( 'Неверный идентификатор формы.', 'contact-form-submissions' ) ) );
-			return;
+		// ── 5. Rate limiting ────────────────────────────────────────────────
+		// The attempt is recorded here rather than after a successful save, so
+		// submissions failing validation still count against the limit.
+		$ip      = $this->get_client_ip();
+		$form_id = isset( $_POST['cfs_form_id'] ) ? (int) $_POST['cfs_form_id'] : 0;
+
+		if ( apply_filters( 'cfs_rate_limit', $this->db->is_rate_limited( $ip ), $ip, $form_id ) ) {
+			$this->fail( 'rate_limit', __( 'Слишком много попыток. Попробуйте позже.', 'contact-form-submissions' ) );
+		}
+		$this->db->record_rate_limit( $ip );
+
+		// ── 6. Form lookup ──────────────────────────────────────────────────
+		$form = $form_id > 0 ? CFS_Form::load( $form_id ) : null;
+
+		if ( null === $form || 'publish' !== get_post_status( $form_id ) || ! $form->is_renderable() ) {
+			$this->fail( 'unknown_form', __( 'Неверный идентификатор формы.', 'contact-form-submissions' ) );
 		}
 
-		/*
-		 * Build submission data.
+		$after = $form->get_after();
+
+		// A page cached before the form was edited posts the old hash. The
+		// submission is still processed — rejecting it would break every
+		// visitor holding an open page the moment someone saves an edit — but
+		// it is validated against the current schema.
+		$posted_hash = isset( $_POST['cfs_hash'] ) ? sanitize_text_field( wp_unslash( $_POST['cfs_hash'] ) ) : '';
+		$stale       = '' !== $posted_hash && $posted_hash !== $form->get_hash();
+
+		// ── 7. Collect and sanitise, driven by the schema ────────────────────
+		$posted = isset( $_POST['cfs'] ) && is_array( $_POST['cfs'] )
+			? wp_unslash( $_POST['cfs'] ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitised per field type below.
+			: array();
+
+		$values = array();
+		foreach ( $form->get_fields() as $name => $field ) {
+			if ( empty( $field['submits'] ) ) {
+				continue;
+			}
+
+			$raw = $posted[ $name ] ?? ( ! empty( $field['multiple'] ) ? array() : '' );
+
+			$values[ $name ] = CFS_Field_Types::sanitize( (string) $field['type'], $raw );
+		}
+
+		// ── 8. Validation ───────────────────────────────────────────────────
+		$errors = array();
+		foreach ( $form->get_fields() as $name => $field ) {
+			if ( empty( $field['submits'] ) ) {
+				continue;
+			}
+
+			$error = CFS_Field_Types::validate( $field, $values[ $name ] );
+
+			/**
+			 * Filter the validation result for one field.
+			 *
+			 * @param string $error   Error message, '' when valid.
+			 * @param string $name    Field name.
+			 * @param mixed  $value   Sanitised value.
+			 * @param int    $form_id Form post ID.
+			 */
+			$error = (string) apply_filters( 'cfs_validate_field', $error, $name, $values[ $name ], $form_id );
+
+			if ( '' !== $error ) {
+				$errors[ $name ] = $error;
+			}
+		}
+
+		if ( ! empty( $errors ) ) {
+			$this->fail(
+				'validation',
+				$this->message( $after, 'validation', __( 'Пожалуйста, исправьте ошибки в форме.', 'contact-form-submissions' ) ),
+				array( 'errors' => $errors )
+			);
+		}
+
+		// ── 9. Anti-spam ────────────────────────────────────────────────────
+		if ( $this->has_banned_words( $values ) ) {
+			$this->fail( 'spam', $this->message( $after, 'spam', __( 'Ваше сообщение было отклонено.', 'contact-form-submissions' ) ) );
+		}
+
+		// ── Build the submission ────────────────────────────────────────────
+		$data = $this->build_submission_data( $form, $values, $ip, $stale );
+
+		/**
+		 * Filter the submission data before it is stored.
 		 *
-		 * Primary fields (name, surname, patronymic, phone, email, comment,
-		 * select, checkbox) map to dedicated DB columns.
-		 *
-		 * Indexed variants (name_2, comment_3, …) and non-cfs_ custom fields
-		 * go into the 'extra' sub-array which is stored in form_data_json.
+		 * @param array $data    Submission data.
+		 * @param int   $form_id Form post ID.
 		 */
-		$primary_fields = array( 'name', 'surname', 'patronymic', 'phone', 'email', 'comment', 'select', 'checkbox' );
+		$data = (array) apply_filters( 'cfs_before_save', $data, $form_id );
 
-		$data = array(
-			'form_id'    => $raw_form_id,
-			'name'       => $field_data['name'] ?? '',
-			'surname'    => $field_data['surname'] ?? '',
-			'patronymic' => $field_data['patronymic'] ?? '',
-			'phone'      => isset( $field_data['phone'] ) && $field_data['phone']
-				? (string) preg_replace( '/\D/', '', $field_data['phone'] )
-				: '',
-			'email'      => $field_data['email'] ?? '',
-			'comment'    => $field_data['comment'] ?? '',
-			'select'     => $field_data['select'] ?? '',
-			'checkbox'   => $field_data['checkbox'] ?? '',
-			'page_url'   => $page_url,
-			'extra'      => array(),
+		/**
+		 * Final spam verdict.
+		 *
+		 * @param bool  $is_spam Whether the submission is spam.
+		 * @param array $data    Submission data.
+		 * @param int   $form_id Form post ID.
+		 */
+		if ( (bool) apply_filters( 'cfs_spam_check', false, $data, $form_id ) ) {
+			$this->fail( 'spam', $this->message( $after, 'spam', __( 'Ваше сообщение было отклонено.', 'contact-form-submissions' ) ) );
+		}
+
+		// ── Store ───────────────────────────────────────────────────────────
+		$settings      = $form->get_settings();
+		$submission_id = 0;
+
+		if ( ! empty( $settings['save_to_db'] ) ) {
+			$submission_id = (int) $this->db->insert_submission( $data );
+
+			if ( ! $submission_id ) {
+				$this->fail(
+					'save_failed',
+					$this->message( $after, 'server', __( 'Ошибка при сохранении данных. Попробуйте позже.', 'contact-form-submissions' ) )
+				);
+			}
+		}
+
+		/**
+		 * Fires after a submission has been stored.
+		 *
+		 * Runs after the database write on purpose: an add-on talking to an
+		 * external system can fail without ever costing the site a lead.
+		 *
+		 * @param int   $submission_id Submission ID, 0 when storage is disabled.
+		 * @param array $data          Submission data.
+		 */
+		do_action( 'cfs_after_save', $submission_id, $data );
+
+		// Mail and integrations. A failure here is logged against the
+		// submission and never shown to the visitor — the lead is already safe.
+		$runner    = new CFS_Action_Runner( $this->db );
+		$overrides = $runner->run( $form, $data, $submission_id );
+
+		wp_send_json_success( array_merge( $this->build_success_response( $after, $data ), $overrides ) );
+	}
+
+	/**
+	 * Assemble the stored submission array.
+	 *
+	 * @param CFS_Form $form   Form.
+	 * @param array    $values Sanitised values keyed by field name.
+	 * @param string   $ip     Client IP.
+	 * @param bool     $stale  Whether the page posted an outdated schema hash.
+	 * @return array
+	 */
+	private function build_submission_data( CFS_Form $form, array $values, string $ip, bool $stale ): array {
+		$fields = array();
+		$schema = array();
+		$extra  = array();
+		$roles  = array(
+			'name'    => '',
+			'email'   => '',
+			'phone'   => '',
+			'comment' => '',
 		);
 
-		// Indexed/secondary field instances go into extra, with phone digits stripped.
-		foreach ( $field_data as $field_token => $value ) {
-			if ( in_array( $field_token, $primary_fields, true ) ) {
-				continue; // Already mapped to a primary column above.
+		foreach ( $form->get_fields() as $name => $field ) {
+			if ( empty( $field['submits'] ) ) {
+				continue;
 			}
-			$base_type = (string) preg_replace( '/(_\d+)$/', '', $field_token );
-			if ( 'phone' === $base_type && $value ) {
+
+			$value = $values[ $name ];
+
+			// Phone numbers are stored as digits only so that two spellings of
+			// the same number stay comparable; the mask is reapplied on display.
+			if ( 'phone' === $field['type'] && is_string( $value ) && '' !== $value ) {
 				$value = (string) preg_replace( '/\D/', '', $value );
 			}
-			$data['extra'][ $field_token ] = $value;
+
+			$flat = is_array( $value ) ? implode( ',', $value ) : (string) $value;
+
+			// The stored label is only ever shown in the admin card, an email
+			// or a CSV cell, so the markup an agreement label carries for the
+			// form itself is stripped here rather than at every read site.
+			$label = wp_strip_all_tags( (string) $field['label'] );
+
+			$fields[] = array(
+				'name'    => $name,
+				'type'    => (string) $field['type'],
+				'label'   => $label,
+				'value'   => $value,
+				'display' => CFS_Field_Types::display( $field, $value ),
+			);
+
+			$schema[] = array(
+				'token' => $name,
+				'type'  => (string) $field['type'],
+				'label' => $label,
+			);
+
+			$role = (string) $field['role'];
+			if ( '' !== $role && isset( $roles[ $role ] ) && '' === $roles[ $role ] ) {
+				$roles[ $role ] = $flat;
+			}
+
+			$extra[ $name ] = $flat;
 		}
 
-		// Merge non-cfs_ custom fields into extra.
-		foreach ( $extra_non_cfs as $key => $value ) {
-			$data['extra'][ $key ] = $value;
-		}
+		$data = array(
+			'_v'           => 2,
+			'form'         => array(
+				'id'    => $form->get_id(),
+				'title' => $form->get_title(),
+				'hash'  => $form->get_hash(),
+				'stale' => $stale,
+			),
+			'form_id'      => (string) $form->get_id(),
+			'form_post_id' => $form->get_id(),
+			'name'         => $roles['name'],
+			'email'        => $roles['email'],
+			'phone'        => $roles['phone'],
+			'comment'      => $roles['comment'],
+			'fields'       => $fields,
+			'extra'        => $extra,
+			'_schema'      => $schema,
+			'page_url'     => isset( $_POST['cfs_page_url'] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce checked in handle_submission().
+				? esc_url_raw( wp_unslash( $_POST['cfs_page_url'] ) )
+				: '',
+		);
 
-		// Save IP and UA per settings.
 		if ( get_option( 'cfs_save_ip', 'yes' ) === 'yes' ) {
 			$data['ip_address'] = $ip;
 		}
+
 		if ( get_option( 'cfs_save_ua', 'yes' ) === 'yes' ) {
 			$data['user_agent'] = isset( $_SERVER['HTTP_USER_AGENT'] )
 				? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) )
 				: '';
 		}
 
-		// Allow external modification before save.
-		$data = apply_filters( 'cfs_before_save', $data, $raw_form_id );
-
-		// Check spam filter result.
-		$is_spam = apply_filters( 'cfs_spam_check', false, $data, $raw_form_id );
-		if ( $is_spam ) {
-			wp_send_json_error( array( 'message' => __( 'Ваше сообщение было отклонено.', 'contact-form-submissions' ) ) );
-			return;
-		}
-
-		// Save to DB.
-		$submission_id = $this->db->insert_submission( $data );
-		if ( ! $submission_id ) {
-			wp_send_json_error( array( 'message' => __( 'Ошибка при сохранении данных. Попробуйте позже.', 'contact-form-submissions' ) ) );
-			return;
-		}
-
-		// Record rate limit entry.
-		$this->db->record_rate_limit( $ip );
-
-		// Fire post-save action.
-		do_action( 'cfs_after_save', $submission_id, $data );
-
-		// Send email notification.
-		$mailer = new CFS_Mailer();
-		$mailer->send_notification( $data, $submission_id );
-
-		$response = array(
-			'message' => __( 'Спасибо! Мы свяжемся с вами.', 'contact-form-submissions' ),
-		);
-
-		$response = apply_filters( 'cfs_success_response', $response, $data );
-
-		wp_send_json_success( $response );
+		return $data;
 	}
 
 	/**
-	 * Get client IP address.
+	 * Response sent to the browser after a successful submission.
+	 *
+	 * @param array $after "After submit" settings.
+	 * @param array $data  Submission data.
+	 * @return array
+	 */
+	private function build_success_response( array $after, array $data ): array {
+		$mode = (string) $after['mode'];
+
+		$response = array(
+			'mode'       => $mode,
+			'message'    => 'redirect' === $mode ? '' : (string) $after['message'],
+			'redirect'   => array(
+				'url'   => in_array( $mode, array( 'redirect', 'message_redirect' ), true )
+					? (string) $after['redirect_url']
+					: '',
+				'delay' => (int) $after['redirect_delay'],
+			),
+			'reset'      => (bool) $after['reset_form'],
+			'scroll'     => (bool) $after['scroll_to_message'],
+			'closeModal' => (bool) $after['close_modal'],
+		);
+
+		/**
+		 * Filter the success response.
+		 *
+		 * @param array $response Response payload.
+		 * @param array $data     Submission data.
+		 */
+		return (array) apply_filters( 'cfs_success_response', $response, $data );
+	}
+
+	/**
+	 * Whether any submitted value contains a banned word.
+	 *
+	 * Every value is scanned, not just the comment: spam routinely hides in a
+	 * secondary field, a surname or a hidden one.
+	 *
+	 * @param array $values Sanitised values.
+	 * @return bool
+	 */
+	private function has_banned_words( array $values ): bool {
+		$raw = (string) get_option( 'cfs_banned_words', '' );
+		if ( '' === trim( $raw ) ) {
+			return false;
+		}
+
+		$banned = array_filter( array_map( 'trim', explode( "\n", $raw ) ) );
+		if ( empty( $banned ) ) {
+			return false;
+		}
+
+		$haystack = '';
+		foreach ( $values as $value ) {
+			$haystack .= ' ' . ( is_array( $value ) ? implode( ' ', $value ) : (string) $value );
+		}
+
+		// stripos() only folds case for ASCII, so "КАЗИНО" never matched the
+		// banned word "казино" — the list was effectively case-sensitive for
+		// every non-Latin alphabet.
+		$has_mb = function_exists( 'mb_stripos' );
+
+		foreach ( $banned as $word ) {
+			if ( '' === $word ) {
+				continue;
+			}
+
+			$found = $has_mb
+				? mb_stripos( $haystack, $word ) !== false
+				: stripos( $haystack, $word ) !== false;
+
+			if ( $found ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Per-form override for a standard error message.
+	 *
+	 * @param array  $after   "After submit" settings.
+	 * @param string $key     Message key.
+	 * @param string $default Built-in text.
+	 * @return string
+	 */
+	private function message( array $after, string $key, string $default ): string {
+		$custom = (string) ( $after['errors'][ $key ] ?? '' );
+		return '' !== trim( $custom ) ? $custom : $default;
+	}
+
+	/**
+	 * Send a JSON error response and stop.
+	 *
+	 * @param string $code    Machine-readable reason.
+	 * @param string $message Human-readable message.
+	 * @param array  $extra   Extra payload, e.g. per-field errors.
+	 */
+	private function fail( string $code, string $message, array $extra = array() ): void {
+		wp_send_json_error(
+			array_merge(
+				array(
+					'code'    => $code,
+					'message' => $message,
+				),
+				$extra
+			)
+		);
+	}
+
+	/**
+	 * Client IP address.
+	 *
+	 * Only REMOTE_ADDR is trusted by default. Proxy headers such as
+	 * X-Forwarded-For are attacker-controlled on any site that is not actually
+	 * behind a proxy overwriting them — trusting them unconditionally lets
+	 * anyone forge an IP and sidestep rate limiting entirely.
+	 *
+	 * Sites genuinely behind Cloudflare or a load balancer can opt back in:
+	 *
+	 *   add_filter( 'cfs_trusted_ip_headers', function () {
+	 *       return array( 'HTTP_CF_CONNECTING_IP' );
+	 *   } );
 	 *
 	 * @return string
 	 */
 	private function get_client_ip(): string {
-		$keys = array(
-			'HTTP_CF_CONNECTING_IP',
-			'HTTP_X_FORWARDED_FOR',
-			'HTTP_X_REAL_IP',
-			'REMOTE_ADDR',
-		);
+		/**
+		 * Filter the proxy headers trusted for client IP detection.
+		 *
+		 * @param array $headers $_SERVER keys, checked before REMOTE_ADDR.
+		 */
+		$trusted = (array) apply_filters( 'cfs_trusted_ip_headers', array() );
 
-		foreach ( $keys as $key ) {
-			if ( ! empty( $_SERVER[ $key ] ) ) {
-				$ip = sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) );
-				// For comma-separated (X-Forwarded-For), take the first.
-				$ip = trim( explode( ',', $ip )[0] );
-				if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-					return $ip;
-				}
+		foreach ( array_merge( $trusted, array( 'REMOTE_ADDR' ) ) as $key ) {
+			if ( empty( $_SERVER[ $key ] ) ) {
+				continue;
+			}
+
+			$ip = sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) );
+			$ip = trim( explode( ',', $ip )[0] );
+
+			if ( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+				return $ip;
 			}
 		}
 

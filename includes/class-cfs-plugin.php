@@ -31,11 +31,26 @@ class CFS_Plugin {
 	private $db;
 
 	/**
-	 * Form builder.
+	 * Form post type registrar.
 	 *
-	 * @var CFS_Form_Builder
+	 * @var CFS_Post_Type
 	 */
-	private $form_builder;
+	private $post_type;
+
+	/**
+	 * Shortcode handler.
+	 *
+	 * @var CFS_Shortcode
+	 */
+	private $shortcode;
+
+	/**
+	 * Post-submit action pipeline.
+	 *
+	 * @var CFS_Action_Runner
+	 */
+	private $action_runner;
+
 
 	/**
 	 * AJAX handler.
@@ -81,8 +96,12 @@ class CFS_Plugin {
 	 * Initialise all sub-systems and register hooks.
 	 */
 	private function init(): void {
-		$this->db           = new CFS_DB();
-		$this->form_builder = new CFS_Form_Builder( $this->db );
+		$this->db            = new CFS_DB();
+		$this->post_type     = new CFS_Post_Type();
+		$this->shortcode     = new CFS_Shortcode();
+		$this->action_runner = new CFS_Action_Runner( $this->db );
+
+		$this->action_runner->register_hooks();
 		$this->ajax_handler = new CFS_Ajax_Handler( $this->db );
 		$this->dashboard    = new CFS_Dashboard( $this->db );
 
@@ -91,6 +110,12 @@ class CFS_Plugin {
 		}
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
+
+		// Deliberately not on admin_init: that hook does not fire on
+		// admin-ajax.php, which is exactly where submissions are processed. A
+		// site updated by replacing files would otherwise keep writing to a
+		// stale schema until someone opened the dashboard.
+		$this->db->maybe_upgrade();
 	}
 
 	/**
