@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Contact Form Submissions
- * Plugin URI:  https://github.com/Plastels51/contact-form-submissions#readme
+ * Plugin URI:  https://github.com/Plastels51/Contact-form#readme
  * Description: Flexible contact forms via shortcode.
  * Version:     4.5.0
  * Requires at least: 5.0

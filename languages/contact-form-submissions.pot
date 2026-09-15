@@ -21,7 +21,7 @@ msgstr ""
 
 #. Plugin URI of the plugin
 #: contact-form-submissions.php
-msgid "https://github.com/Plastels51/contact-form-submissions#readme"
+msgid "https://github.com/Plastels51/Contact-form#readme"
 msgstr ""
 
 #. Description of the plugin
