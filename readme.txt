@@ -137,13 +137,18 @@ values, runs it after the submission is saved, retries on failure and logs the r
 
 = 4.5.2 =
 
-**A textarea no longer collapses on the first keystroke.** In the underline skin the field
-sizes itself to its content, with a floor of one line — so a four-row box stood at four
-rows only while it was empty and shrank to one the moment anyone typed. The floor is now
-the author's own `rows`, carried into CSS as a `--cfs-rows` custom property on the element
-because no stylesheet can read the attribute. An empty field also stops sizing itself to
-its placeholder: a long one wrapped into a wall of text that then vanished, so while the
-placeholder is what is showing, `rows` decides the height.
+**A textarea in the underline skin starts at one line and only grows.** That skin sizes the
+field to its content, and the resting height was whatever the browser made of the rows
+attribute and the placeholder — a long placeholder wrapped into a wall of text that
+vanished on the first keystroke, and the box could then shrink below the size the author
+had asked for.
+
+The resting height is now one line, which is what a field that grows should start at, and
+`rows` raises it for an author who wants more. The number reaches CSS as a `--cfs-rows`
+custom property on the element, written only when the author named it: no stylesheet can
+read the attribute, and the attribute carries a floor of two that belongs to the skins the
+browser sizes, not to this one. While the placeholder is showing, the height is pinned to
+that same measure, so the placeholder no longer decides how tall the field is.
 
 
 = 4.5.1 =

@@ -170,17 +170,25 @@ $t->test( 'ограничения попадают в атрибуты ввод�
 	$a->contains( 'rows="6"', $html );
 } );
 
-$t->test( 'textarea отдаёт число строк ещё и в CSS', function ( CFS_Test_Runner $a ) use ( &$created ) {
-	// The underline skin lets the field size itself to its content, and CSS
-	// cannot read the rows attribute — without this floor the first keystroke
-	// collapses the box to one line.
+$t->test( 'textarea отдаёт запрошенные строки в CSS, а не подставленные', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	// The underline skin sizes the field to its content and reads --cfs-rows as
+	// the resting height. CSS cannot read the rows attribute, and the attribute
+	// would be the wrong number anyway: it carries the clamp and the default.
 	$html = cfs_render_template( $created, '[textarea c rows="6"][submit]' );
+	$a->contains( 'rows="6"', $html );
 	$a->contains( '--cfs-rows:6', $html );
 
-	// Same clamp as the attribute: a one-row textarea is a text input.
+	// The attribute keeps its floor of two — a one-row <textarea> is a text
+	// input — but the skin that grows gets the single line that was asked for.
 	$html = cfs_render_template( $created, '[textarea c rows="1"][submit]' );
 	$a->contains( 'rows="2"', $html );
-	$a->contains( '--cfs-rows:2', $html );
+	$a->contains( '--cfs-rows:1', $html );
+
+	// Nothing asked, nothing written: the stylesheet's own default of one line
+	// answers, while the attribute keeps the four rows the other skins expect.
+	$html = cfs_render_template( $created, '[textarea c][submit]' );
+	$a->contains( 'rows="4"', $html );
+	$a->lacks( '--cfs-rows', $html );
 } );
 
 $t->test( 'select выводит подпись как первую опцию', function ( CFS_Test_Runner $a ) use ( &$created ) {

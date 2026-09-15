@@ -710,9 +710,23 @@ class CFS_Form_Renderer {
 		$name = (string) $field['name'];
 		$id   = $this->field_id( $name );
 		$icon = CFS_Icons::render( $this->attr( $field, 'icon' ) );
-		$rows = (int) $this->attr( $field, 'rows', '4' );
 
-		$rows = max( 2, $rows );
+		/*
+		 * Two numbers out of one attribute, because two kinds of skin read it.
+		 *
+		 * The rows attribute sizes the field wherever the browser sizes it —
+		 * four by default, never below two, since a one-row <textarea> renders
+		 * as a text input with a resize handle.
+		 *
+		 * The underline skin sizes the field to its content instead, and there
+		 * rows is the resting height rather than the whole story: a field that
+		 * grows as it is filled should start at a single line unless the author
+		 * asked for more. That number goes into CSS as --cfs-rows, written only
+		 * when the author actually named it, so the stylesheet's own default of
+		 * one line answers for everyone else.
+		 */
+		$asked = $this->attr( $field, 'rows' );
+		$rows  = max( 2, (int) ( '' !== $asked ? $asked : '4' ) );
 
 		$attrs = array(
 			'id'               => $id,
@@ -722,15 +736,7 @@ class CFS_Form_Renderer {
 			'rows'             => (string) $rows,
 			'placeholder'      => $this->attr( $field, 'placeholder' ),
 			'aria-describedby' => $id . '-error',
-
-			/*
-			 * The same number again, for CSS. The underline skin lets the field
-			 * size itself to its content, and a field that can size itself can
-			 * also shrink: without a floor expressed in the author's own rows,
-			 * the first keystroke collapsed a four-row box to one line.
-			 * No stylesheet can read the rows attribute, hence the property.
-			 */
-			'style'            => '--cfs-rows:' . $rows,
+			'style'            => '' !== $asked ? '--cfs-rows:' . max( 1, (int) $asked ) : '',
 		);
 
 		$maxlength = (string) ( $field['constraints']['maxlength'] ?? '' );

@@ -81,13 +81,14 @@
 		field-sizing: content;
 
 		/*
-		 * The rows attribute is the resting size, so growth is all the field
-		 * can do. With min-height at one line it could also shrink below what
-		 * the author asked for, and the first keystroke collapsed the box.
-		 * --cfs-rows is written onto the element by the renderer; the addend is
-		 * the vertical padding, which min-height includes under border-box.
+		 * One line at rest, growing from there — the size a field that grows
+		 * should start at. An author who wants more says so with rows, and the
+		 * renderer passes that number here as --cfs-rows; the attribute itself
+		 * is no use, since it is clamped to two for the skins the browser sizes.
+		 * The addend is the vertical padding, which min-height counts under
+		 * border-box.
 		 */
-		min-height: calc(var(--cfs-rows, 2) * 1lh + 1.25rem);
+		min-height: calc(var(--cfs-rows, 1) * 1lh + 1.25rem);
 		max-height: 10lh;
 		resize: none;
 		overflow-y: auto;
@@ -96,12 +97,14 @@
 	/*
 	 * An empty field sizes itself to its placeholder, and a placeholder is text
 	 * like any other: "Что произошло, куда уже обращались, какой был ответ"
-	 * wrapped into ten lines, hit max-height, and stood there as a wall until
-	 * the first keystroke replaced it with the real content. While the
-	 * placeholder is what is showing, rows decides the height instead.
+	 * wrapped into ten lines and stood there as a wall until the first
+	 * keystroke replaced it with the real content. Pinning the height while the
+	 * placeholder shows takes the measurement away from it — and it has to be
+	 * height rather than field-sizing: fixed, which would hand the job to the
+	 * rows attribute and its floor of two.
 	 */
 	.cfs-style--underline .cfs-textarea:placeholder-shown {
-		field-sizing: fixed;
+		height: calc(var(--cfs-rows, 1) * 1lh + 1.25rem);
 	}
 }
 
