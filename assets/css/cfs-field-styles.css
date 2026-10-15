@@ -28,19 +28,28 @@
 	border-radius: 0;
 }
 
+/*
+ * Focus: the underline thickens to --cfs-focus-width.
+ *
+ * One rule on :focus, not a :focus / :focus-visible pair. Browsers treat
+ * focus on a text field as visible even after a mouse click, so the pair
+ * always stacked up on text fields — and only on them: a select clicked
+ * with the mouse matched :focus alone and got a thinner line than the
+ * same select reached with Tab.
+ *
+ * The extra thickness is a shadow under the 1px border, not a wider
+ * border: the border width counts towards the field's height, and growing
+ * it on focus nudged everything below the field down. A shadow takes no
+ * room — it hangs below the field without moving anything. The offset
+ * assumes the 1px border from --cfs-border-type.
+ */
 .cfs-style--underline .cfs-input:focus {
 	border-top-color: transparent;
 	border-left-color: transparent;
 	border-right-color: transparent;
-	border-bottom-width: 2px;
 	border-bottom-color: var(--cfs-accent, #0073aa);
-	box-shadow: none;
-}
-
-.cfs-style--underline .cfs-input:focus-visible {
+	box-shadow: 0 calc(var(--cfs-focus-width, 2px) - 1px) 0 0 var(--cfs-accent, #0073aa);
 	outline: none;
-	border-bottom-color: var(--cfs-accent, #0073aa);
-	box-shadow: 0 2px 0 0 var(--cfs-accent, #0073aa);
 }
 
 /* No background strip needed — there is no top border to cut through. */
@@ -64,7 +73,7 @@
 .cfs-style--underline .cfs-input--error:focus,
 .cfs-style--underline .cfs-input[aria-invalid="true"]:focus {
 	border-bottom-color: var(--cfs-error-dark, #c0392b);
-	box-shadow: 0 2px 0 0 var(--cfs-error-dark, #c0392b);
+	box-shadow: 0 calc(var(--cfs-focus-width, 2px) - 1px) 0 0 var(--cfs-error-dark, #c0392b);
 }
 
 /* Select: keep the arrow visible, underline only. */
