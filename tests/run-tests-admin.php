@@ -495,6 +495,63 @@ $t->test( 'предпросмотр модальной формы развора
 	$a->contains( '<div class="cfs-form-wrap"', $html );
 } );
 
+// ── The help screen ────────────────────────────────────────────────────────
+
+/**
+ * Render the help screen into a string.
+ *
+ * @return string
+ */
+$cfs_help_html = function (): string {
+	ob_start();
+	( new CFS_Admin( new CFS_DB() ) )->page_help();
+
+	return (string) ob_get_clean();
+};
+
+$t->test( 'справка рисует каждый раздел и ссылку на него', function ( CFS_Test_Runner $a ) use ( $cfs_help_html ) {
+	$html = $cfs_help_html();
+
+	// One array drives the contents, the headings and the dispatch, so a
+	// missing section shows up here as a link with nothing behind it.
+	foreach ( array( 'basics', 'syntax', 'types', 'attributes', 'examples', 'steps', 'icons', 'buttons', 'after', 'mail', 'actions', 'submissions', 'html', 'hooks' ) as $anchor ) {
+		$a->contains( 'id="cfs-help-' . $anchor . '"', $html, $anchor . ': заголовок' );
+		$a->contains( 'href="#cfs-help-' . $anchor . '"', $html, $anchor . ': ссылка в оглавлении' );
+	}
+} );
+
+$t->test( 'справка называет все кнопки и их базовые классы', function ( CFS_Test_Runner $a ) use ( $cfs_help_html ) {
+	$html = $cfs_help_html();
+
+	foreach ( array( 'cfs-btn--submit', 'cfs-btn--next', 'cfs-btn--back', 'cfs-modal-btn', 'cfs-modal-close' ) as $class ) {
+		$a->contains( $class, $html, $class );
+	}
+
+	$a->lacks( 'cfs-btn--prev', $html, 'кнопки с таким модификатором не существует' );
+} );
+
+$t->test( 'справочные списки берутся из реестров, а не набраны руками', function ( CFS_Test_Runner $a ) use ( $cfs_help_html ) {
+	$html = $cfs_help_html();
+
+	foreach ( CFS_Field_Types::all() as $type => $descriptor ) {
+		$a->contains( '<code>' . $type . '</code>', $html, 'тип ' . $type );
+	}
+
+	foreach ( CFS_Form_Renderer::widths() as $width ) {
+		$a->contains( $width, $html, 'ширина ' . $width );
+	}
+
+	foreach ( array( 'close', 'angle-small-left', 'angle-small-right' ) as $icon ) {
+		$a->contains( '<code>' . $icon . '</code>', $html, 'иконка ' . $icon );
+	}
+
+	$a->contains( '<code>cfs_timestamp</code>', $html, 'зарезервированное имя' );
+
+	// esc_html() over an already-joined string escapes the separators too, and
+	// the page then prints a literal "</code>, <code>" between the values.
+	$a->lacks( '&lt;/code&gt;', $html, 'списки склеены после экранирования, а не до' );
+} );
+
 // ── Cleanup ────────────────────────────────────────────────────────────────
 foreach ( array_unique( $created ) as $post_id ) {
 	wp_delete_post( (int) $post_id, true );

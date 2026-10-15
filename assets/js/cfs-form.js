@@ -523,7 +523,13 @@
 	}
 
 	/**
-	 * Read the compiled configuration the form carries in data-cfs-config.
+	 * Read the compiled configuration that belongs to this form.
+	 *
+	 * It lives in a <script type="application/json"> the form points at with
+	 * data-cfs-config-id. The data-cfs-config attribute is the 3.x carrier and
+	 * is still read as a fallback: a page cached before the upgrade holds the
+	 * attribute while already loading this script.
+	 *
 	 * Parsed once per form and cached on the element.
 	 *
 	 * @param {HTMLFormElement} form
@@ -535,13 +541,14 @@
 		}
 
 		var config = { fields: {}, steps: [], after: {} };
-		var raw    = form.getAttribute('data-cfs-config');
+		var holder = document.getElementById(form.getAttribute('data-cfs-config-id') || '');
+		var raw    = holder ? holder.textContent : form.getAttribute('data-cfs-config');
 
 		if (raw) {
 			try {
 				config = JSON.parse(raw);
 			} catch (err) {
-				logError('Cannot parse data-cfs-config:', err);
+				logError('Cannot parse the form config:', err);
 			}
 		}
 
@@ -1010,8 +1017,8 @@
 
 		/*
 		 * What happens after a submission is decided by the server: an action
-		 * can change the message or add a redirect at run time. The config in
-		 * data-cfs-config is only the fallback for an older cached response.
+		 * can change the message or add a redirect at run time. The rendered
+		 * config is only the fallback for an older cached response.
 		 */
 		var message     = (typeof data.message === 'string') ? data.message : (after.message || 'Спасибо!');
 		var redirectUrl = (data.redirect && data.redirect.url) ? data.redirect.url : '';

@@ -229,13 +229,19 @@ class CFS_Admin_Form_Editor {
 			'modal_button_icon_before' => sanitize_key( (string) ( $raw['modal_button_icon_before'] ?? '' ) ),
 			'modal_button_icon_after'  => sanitize_key( (string) ( $raw['modal_button_icon_after'] ?? '' ) ),
 			'modal_button_class'       => sanitize_text_field( (string) ( $raw['modal_button_class'] ?? '' ) ),
+			'close_icon'               => sanitize_key( (string) ( $raw['close_icon'] ?? '' ) ),
+			'close_class'              => sanitize_text_field( (string) ( $raw['close_class'] ?? '' ) ),
 			'css_class'                => sanitize_text_field( (string) ( $raw['css_class'] ?? '' ) ),
 			'style_theme'              => $theme,
 			'save_to_db'               => ! empty( $raw['save_to_db'] ),
 			'next_text'                => sanitize_text_field( (string) ( $raw['next_text'] ?? '' ) ),
 			'back_text'                => sanitize_text_field( (string) ( $raw['back_text'] ?? '' ) ),
+			'next_icon_before'         => sanitize_key( (string) ( $raw['next_icon_before'] ?? '' ) ),
 			'next_icon_after'          => sanitize_key( (string) ( $raw['next_icon_after'] ?? '' ) ),
+			'next_class'               => sanitize_text_field( (string) ( $raw['next_class'] ?? '' ) ),
 			'back_icon_before'         => sanitize_key( (string) ( $raw['back_icon_before'] ?? '' ) ),
+			'back_icon_after'          => sanitize_key( (string) ( $raw['back_icon_after'] ?? '' ) ),
+			'back_class'               => sanitize_text_field( (string) ( $raw['back_class'] ?? '' ) ),
 		);
 	}
 
@@ -909,6 +915,14 @@ class CFS_Admin_Form_Editor {
 				</td>
 			</tr>
 			<tr>
+				<th scope="row"><?php esc_html_e( 'Кнопка закрытия окна', 'contact-form-submissions' ); ?></th>
+				<td>
+					<?php $this->render_icon_select( 'cfs_settings[close_icon]', (string) $settings['close_icon'], __( 'иконка', 'contact-form-submissions' ) ); ?>
+					<input type="text" name="cfs_settings[close_class]" value="<?php echo esc_attr( (string) $settings['close_class'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'CSS-классы', 'contact-form-submissions' ); ?>">
+					<p class="description"><?php esc_html_e( 'Только для модального окна. Если иконка не выбрана — крестик из набора.', 'contact-form-submissions' ); ?></p>
+				</td>
+			</tr>
+			<tr>
 				<th scope="row"><label for="cfs-css-class"><?php esc_html_e( 'CSS-класс формы', 'contact-form-submissions' ); ?></label></th>
 				<td>
 					<input type="text" id="cfs-css-class" name="cfs_settings[css_class]" value="<?php echo esc_attr( (string) $settings['css_class'] ); ?>" class="regular-text" placeholder="cfs-form--cols-2">
@@ -936,11 +950,22 @@ class CFS_Admin_Form_Editor {
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e( 'Кнопки мастера', 'contact-form-submissions' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'Кнопка «Назад»', 'contact-form-submissions' ); ?></th>
 				<td>
 					<input type="text" name="cfs_settings[back_text]" value="<?php echo esc_attr( (string) $settings['back_text'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Назад', 'contact-form-submissions' ); ?>">
+					<?php $this->render_icon_select( 'cfs_settings[back_icon_before]', (string) $settings['back_icon_before'], __( 'иконка слева', 'contact-form-submissions' ) ); ?>
+					<?php $this->render_icon_select( 'cfs_settings[back_icon_after]', (string) $settings['back_icon_after'], __( 'иконка справа', 'contact-form-submissions' ) ); ?>
+					<input type="text" name="cfs_settings[back_class]" value="<?php echo esc_attr( (string) $settings['back_class'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'CSS-классы', 'contact-form-submissions' ); ?>">
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Кнопка «Далее»', 'contact-form-submissions' ); ?></th>
+				<td>
 					<input type="text" name="cfs_settings[next_text]" value="<?php echo esc_attr( (string) $settings['next_text'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Далее', 'contact-form-submissions' ); ?>">
-					<p class="description"><?php esc_html_e( 'Используются, когда в шаблоне есть тег [step].', 'contact-form-submissions' ); ?></p>
+					<?php $this->render_icon_select( 'cfs_settings[next_icon_before]', (string) $settings['next_icon_before'], __( 'иконка слева', 'contact-form-submissions' ) ); ?>
+					<?php $this->render_icon_select( 'cfs_settings[next_icon_after]', (string) $settings['next_icon_after'], __( 'иконка справа', 'contact-form-submissions' ) ); ?>
+					<input type="text" name="cfs_settings[next_class]" value="<?php echo esc_attr( (string) $settings['next_class'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'CSS-классы', 'contact-form-submissions' ); ?>">
+					<p class="description"><?php esc_html_e( 'Обе кнопки появляются, когда в шаблоне есть тег [step].', 'contact-form-submissions' ); ?></p>
 				</td>
 			</tr>
 			<tr>

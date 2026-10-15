@@ -818,7 +818,7 @@ class CFS_Form_Builder {
 
 		if ( $is_dialog ) {
 			?>
-			<dialog class="<?php echo esc_attr( $wrap_class ); ?>" id="<?php echo esc_attr( $wrap_id ); ?>">
+			<dialog class="<?php echo esc_attr( $wrap_class ); ?>" id="<?php echo esc_attr( $wrap_id ); ?>" aria-labelledby="<?php echo esc_attr( CFS_Form_Renderer::DIALOG_LABEL_ID ); ?>">
 			<?php
 		} else {
 			?>

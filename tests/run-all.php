@@ -22,6 +22,7 @@ $cfs_suites = array(
 	'run-tests.php',
 	'run-tests-form.php',
 	'run-tests-render.php',
+	'run-tests-icons.php',
 	'run-tests-ajax.php',
 	'run-tests-admin.php',
 	'run-tests-actions.php',

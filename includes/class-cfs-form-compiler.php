@@ -24,7 +24,15 @@ class CFS_Form_Compiler {
 	 * Schema format version, stored with every compiled schema and every
 	 * submission so old data stays readable after future changes.
 	 */
-	const SCHEMA_VERSION = 4;
+	const SCHEMA_VERSION = 5;
+
+	/**
+	 * Step index of everything that belongs to no step.
+	 *
+	 * A plan entry carrying this renders outside the wizard's panels, so it
+	 * stays on screen while the steps change under it.
+	 */
+	const NO_STEP = -1;
 
 	/**
 	 * Field names the plugin uses for its own machinery.
@@ -72,6 +80,7 @@ class CFS_Form_Compiler {
 		$step_index  = 0;
 		$has_submit  = false;
 		$step_dirty  = false; // Whether the current step already has content.
+		$in_unstep   = false; // Whether we are inside an [unstep] region.
 
 		foreach ( $segments as $segment ) {
 
@@ -79,9 +88,12 @@ class CFS_Form_Compiler {
 				$plan[] = array(
 					'kind'    => 'html',
 					'content' => $segment['content'],
-					'step'    => $step_index,
+					'step'    => $in_unstep ? self::NO_STEP : $step_index,
 				);
-				if ( '' !== trim( wp_strip_all_tags( $segment['content'] ) ) ) {
+				// Content outside the steps must not mark a step as used: a
+				// heading above the wizard would otherwise push [step] into
+				// creating an empty first panel in front of itself.
+				if ( ! $in_unstep && '' !== trim( wp_strip_all_tags( $segment['content'] ) ) ) {
 					$step_dirty = true;
 				}
 				continue;
@@ -106,14 +118,34 @@ class CFS_Form_Compiler {
 			$descriptor = CFS_Field_Types::get( $type );
 			$attrs      = self::normalize_attrs( $tag, $type, $descriptor, $errors );
 
+			// ── Outside-the-steps separator ─────────────────────────────────
+			if ( 'unstep' === $type ) {
+				$in_unstep = true;
+				$plan[]    = array(
+					'kind' => 'unstep',
+					'step' => self::NO_STEP,
+				);
+				continue;
+			}
+
 			// ── Step separator ──────────────────────────────────────────────
 			if ( 'step' === $type ) {
-				$label = (string) ( $attrs['label'] ?? '' );
+				$label     = (string) ( $attrs['label'] ?? '' );
+				$in_unstep = false;
 
-				if ( 0 === $step_index && ! $step_dirty && empty( $steps[0] ) ) {
-					// A [step] at the very top labels the first step instead of
-					// creating an empty one before it.
-					$step_labels[0] = $label;
+				/*
+				 * A [step] with nothing behind it names the step it is already
+				 * in rather than closing it — at the top of a template that is
+				 * how the first step gets its label without an empty panel
+				 * appearing in front of it, and further down it is what keeps
+				 * two adjacent [step] tags from leaving a blank panel between
+				 * them. The renderer relies on this: it walks the plan once and
+				 * opens a panel where it meets one, so a step with no entries
+				 * at all would leave the browser one panel short of the count
+				 * the wizard script expects.
+				 */
+				if ( ! $step_dirty && empty( $steps[ $step_index ] ) ) {
+					$step_labels[ $step_index ] = $label;
 					continue;
 				}
 
@@ -131,11 +163,11 @@ class CFS_Form_Compiler {
 			// ── Submit button ───────────────────────────────────────────────
 			if ( 'submit' === $type ) {
 				$has_submit = true;
-				$step_dirty = true;
+				$step_dirty = $step_dirty || ! $in_unstep;
 				$plan[]     = array(
 					'kind'  => 'submit',
 					'attrs' => $attrs,
-					'step'  => $step_index,
+					'step'  => $in_unstep ? self::NO_STEP : $step_index,
 				);
 				continue;
 			}
@@ -181,15 +213,21 @@ class CFS_Form_Compiler {
 				}
 			}
 
-			$fields[ $name ]      = $field;
-			$order[]              = $name;
-			$steps[ $step_index ][] = $name;
-			$step_dirty           = true;
+			$fields[ $name ] = $field;
+			$order[]         = $name;
+
+			// A field outside the steps is on screen the whole time, so it
+			// belongs to no panel. It is still validated on submit, because
+			// that pass walks the form rather than the current step.
+			if ( ! $in_unstep ) {
+				$steps[ $step_index ][] = $name;
+				$step_dirty             = true;
+			}
 
 			$plan[] = array(
 				'kind' => 'field',
 				'name' => $name,
-				'step' => $step_index,
+				'step' => $in_unstep ? self::NO_STEP : $step_index,
 			);
 		}
 

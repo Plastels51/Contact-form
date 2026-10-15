@@ -53,16 +53,22 @@ function cfs_render_template( array &$created, string $template, array $settings
 }
 
 /**
- * Pull the data-cfs-config JSON out of rendered markup.
+ * Pull the front-end config JSON out of rendered markup.
+ *
+ * Reads the script tag first and the 3.x attribute second, exactly as the
+ * browser script does.
  *
  * @param string $html Rendered form.
  * @return array
  */
 function cfs_render_config( string $html ): array {
-	if ( ! preg_match( '/data-cfs-config="([^"]*)"/', $html, $m ) ) {
-		return array();
+	if ( preg_match( '#<script type="application/json" id="cfs-config-[^"]*">(.*?)</script>#s', $html, $m ) ) {
+		return (array) json_decode( str_replace( '<\/', '</', $m[1] ), true );
 	}
-	return (array) json_decode( html_entity_decode( $m[1], ENT_QUOTES, 'UTF-8' ), true );
+	if ( preg_match( '/data-cfs-config="([^"]*)"/', $html, $m ) ) {
+		return (array) json_decode( html_entity_decode( $m[1], ENT_QUOTES, 'UTF-8' ), true );
+	}
+	return array();
 }
 
 echo "\nCFS renderer / shortcode\n";
@@ -76,7 +82,13 @@ $t->test( 'каркас формы и системные поля', function ( C
 	$html = cfs_render_template( $created, '[name* n label="Имя"][submit "Ок"]' );
 
 	$a->contains( '<div class="cfs-form-wrap"', $html );
+	$a->contains( '<div class="cfs-form-body"><form class="cfs-form"', $html );
 	$a->contains( '<form class="cfs-form"', $html );
+
+	// The attribute belongs to the modal, where the wrapper scrolls. Here it
+	// would tell a smooth-scroll library to stop scrolling the page whenever
+	// the cursor is over the form.
+	$a->lacks( 'data-lenis-prevent', $html );
 	$a->contains( 'novalidate', $html );
 	$a->contains( 'name="cfs_hp_w"', $html );
 	$a->contains( 'name="cfs_hp_x"', $html );
@@ -156,6 +168,27 @@ $t->test( 'ограничения попадают в атрибуты ввод�
 	$a->contains( 'step="1"', $html );
 	$a->contains( 'maxlength="500"', $html );
 	$a->contains( 'rows="6"', $html );
+} );
+
+$t->test( 'textarea отдаёт запрошенные строки в CSS, а не подставленные', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	// The underline skin sizes the field to its content and reads --cfs-rows as
+	// the resting height. CSS cannot read the rows attribute, and the attribute
+	// would be the wrong number anyway: it carries the clamp and the default.
+	$html = cfs_render_template( $created, '[textarea c rows="6"][submit]' );
+	$a->contains( 'rows="6"', $html );
+	$a->contains( '--cfs-rows:6', $html );
+
+	// The attribute keeps its floor of two — a one-row <textarea> is a text
+	// input — but the skin that grows gets the single line that was asked for.
+	$html = cfs_render_template( $created, '[textarea c rows="1"][submit]' );
+	$a->contains( 'rows="2"', $html );
+	$a->contains( '--cfs-rows:1', $html );
+
+	// Nothing asked, nothing written: the stylesheet's own default of one line
+	// answers, while the attribute keeps the four rows the other skins expect.
+	$html = cfs_render_template( $created, '[textarea c][submit]' );
+	$a->contains( 'rows="4"', $html );
+	$a->lacks( '--cfs-rows', $html );
 } );
 
 $t->test( 'select выводит подпись как первую опцию', function ( CFS_Test_Runner $a ) use ( &$created ) {
@@ -255,6 +288,95 @@ $t->test( 'многошаговая форма получает степпер �
 	$a->lacks( 'cfs-field cfs-field--submit', $html );
 } );
 
+$t->test( '[unstep] в начале выносит шапку над степпером', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template(
+		$created,
+		'[unstep]<h3 id="hdr">Расскажите</h3>[step label="Данные"][name* n][step label="Вопрос"][textarea c][submit]'
+	);
+
+	$a->contains( '<h3 id="hdr">Расскажите</h3>', $html, 'заголовок выведен' );
+
+	$head    = strpos( $html, '<h3 id="hdr">' );
+	$stepper = strpos( $html, '<ol class="cfs-stepper"' );
+	$panel   = strpos( $html, '<div class="cfs-step"' );
+
+	$a->ok( false !== $head && false !== $stepper && false !== $panel, 'все три блока на месте' );
+	$a->ok( $head < $stepper, 'шапка выше степпера' );
+	$a->ok( $stepper < $panel, 'степпер выше панелей' );
+
+	// The heading must not be inside a panel, or it would vanish on step two.
+	$a->same( 2, substr_count( $html, '<div class="cfs-step" data-step=' ), 'ровно две панели' );
+	$a->contains( '<div class="cfs-step" data-step="0"><div class="cfs-field cfs-field--name', $html, 'панель начинается сразу с поля' );
+} );
+
+$t->test( '[unstep] не создаёт лишний шаг', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	// Before [unstep] existed, a heading in front of [step] pushed the wizard
+	// into an empty first panel. The label has to land on the real first step.
+	$html = cfs_render_template(
+		$created,
+		'[unstep]<p>шапка</p>[step label="Первый"][name* n][step label="Второй"][phone p][submit]'
+	);
+
+	$a->same( 2, substr_count( $html, 'cfs-stepper-item' ), 'в степпере два пункта' );
+	$a->contains( 'Первый', $html );
+	$a->contains( 'Второй', $html );
+	$a->lacks( '<div class="cfs-step" data-step="2"', $html );
+} );
+
+$t->test( '[unstep] после шагов выводится вне панелей', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template(
+		$created,
+		'[step label="A"][name* n][step label="B"][phone p][unstep]<p id="foot">примечание</p>[submit]'
+	);
+
+	$a->contains( '<p id="foot">примечание</p>', $html );
+	$a->same( 2, substr_count( $html, '<div class="cfs-step" data-step=' ), 'панелей всё ещё две' );
+
+	// The note closes the last panel rather than sitting inside it.
+	$a->contains( '</div><p id="foot">', $html, 'примечание вынесено за панель' );
+} );
+
+$t->test( 'поле в [unstep] не принадлежит ни одному шагу', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template(
+		$created,
+		'[unstep][name* always][step label="A"][phone p][step label="B"][textarea c][submit]'
+	);
+
+	$config = cfs_render_config( $html );
+
+	$a->ok( isset( $config['fields']['always'] ), 'поле есть в конфиге и будет провалидировано' );
+	$a->same( 2, count( (array) $config['steps'] ), 'шагов по-прежнему два' );
+
+	foreach ( (array) $config['steps'] as $names ) {
+		$a->not( in_array( 'always', (array) $names, true ), 'поле не попало в список шага' );
+	}
+} );
+
+$t->test( '[unstep] в форме без шагов ничего не ломает', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template( $created, '[unstep]<p>текст</p>[name* n][submit]' );
+
+	$a->contains( '<p>текст</p>', $html );
+	$a->lacks( 'cfs-stepper', $html, 'степпера нет' );
+	$a->lacks( 'cfs-step-nav', $html, 'навигации нет' );
+	$a->contains( 'cfs-field cfs-field--submit', $html, 'кнопка на месте' );
+} );
+
+$t->test( 'два [step] подряд не дают пустую панель', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template(
+		$created,
+		'[step label="A"][step label="B"][name* n][step label="C"][phone p][submit]'
+	);
+
+	$panels = substr_count( $html, '<div class="cfs-step" data-step=' );
+	$items  = substr_count( $html, 'cfs-stepper-item' );
+
+	$a->same( 2, $panels, 'панелей столько же, сколько непустых шагов' );
+	$a->same( $items, $panels, 'счётчик степпера совпадает с числом панелей' );
+	$a->lacks( '<span class="cfs-step-label">A</span>', $html, 'подпись пустого шага заменена следующей' );
+	$a->contains( '<span class="cfs-step-label">B</span>', $html );
+	$a->contains( '<span class="cfs-step-label">C</span>', $html );
+} );
+
 $t->test( 'без подписей шагов степпер компактный', function ( CFS_Test_Runner $a ) use ( &$created ) {
 	$html = cfs_render_template( $created, '[name n][step][phone p][submit]' );
 	$a->contains( 'cfs-stepper cfs-stepper--compact', $html );
@@ -274,6 +396,31 @@ $t->test( 'модальный контейнер даёт кнопку и dialog
 	$a->contains( '<dialog class="cfs-form-wrap cfs-form-wrap--dialog"', $html );
 	$a->contains( 'class="cfs-modal-close"', $html );
 	$a->contains( 'aria-haspopup="dialog"', $html );
+	$a->contains( 'aria-labelledby="dialog-label"', $html );
+} );
+
+$t->test( 'в модале скроллится форма, а не сам диалог', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template( $created, '[name n][submit]', array( 'container' => 'dialog' ) );
+
+	// Both the close button and the result banner are positioned against the
+	// <dialog>. They only stay put while the scrolling happens below them, in
+	// .cfs-form-body.
+	$close  = strpos( $html, 'class="cfs-modal-close"' );
+	$banner = strpos( $html, 'class="cfs-form-message"' );
+	$body   = strpos( $html, 'class="cfs-form-body"' );
+
+	$a->ok( false !== $close && false !== $banner && false !== $body, 'все три части на месте' );
+	$a->ok( $close < $body && $banner < $body, 'кнопка и баннер выше скролл-контейнера' );
+	$a->ok( strpos( $html, '<form' ) > $body, 'форма внутри контейнера' );
+
+	// Lenis and Locomotive animate the page themselves and never see
+	// overscroll-behavior; without this the page glides behind the open window.
+	$a->contains( 'class="cfs-form-body" data-lenis-prevent', $html );
+} );
+
+$t->test( 'обычный контейнер обходится без aria-labelledby', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template( $created, '[name n][submit]' );
+	$a->lacks( 'aria-labelledby="dialog-label"', $html );
 } );
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -290,6 +437,30 @@ $t->test( 'конфиг для JS содержит правила полей', f
 	$a->same( '1', $config['fields']['x']['min'] );
 	$a->same( array( '1', '2' ), $config['fields']['s']['options'] );
 	$a->ok( isset( $config['after']['mode'] ), 'after-submit settings present' );
+} );
+
+$t->test( 'конфиг едет в JSON-теге, а не в атрибуте', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template( $created, '[name n label="Имя"][submit]' );
+
+	$a->contains( 'data-cfs-config-id="cfs-config-', $html );
+	$a->contains( '<script type="application/json" id="cfs-config-', $html );
+	$a->lacks( 'data-cfs-config="', $html );
+} );
+
+$t->test( 'подписи полей в конфиг не попадают', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html   = cfs_render_template( $created, '[name n label="Имя"][submit]' );
+	$config = cfs_render_config( $html );
+
+	$a->ok( isset( $config['fields']['n'] ), 'field present' );
+	$a->ok( ! isset( $config['fields']['n']['label'] ), 'no label key in the config' );
+	$a->contains( '>Имя', $html, 'the visible label is still rendered' );
+} );
+
+$t->test( 'кириллица в конфиге не экранируется', function ( CFS_Test_Runner $a ) use ( &$created ) {
+	$html = cfs_render_template( $created, '[name n label="Имя" error="Введите имя"][submit]' );
+
+	$a->contains( 'Введите имя', $html, 'text stays readable in the JSON' );
+	$a->lacks( '\u0412', $html, 'no \uXXXX escaping' );
 } );
 
 $t->test( 'конфиг несёт шаги', function ( CFS_Test_Runner $a ) use ( &$created ) {

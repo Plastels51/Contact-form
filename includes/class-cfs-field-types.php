@@ -298,6 +298,14 @@ class CFS_Field_Types {
 				'supports' => array( 'label' ),
 				'css'      => 'step',
 			),
+			'unstep'     => array(
+				'label'    => __( 'Общая часть (вне шагов)', 'contact-form-submissions' ),
+				'group'    => 'special',
+				'render'   => 'step',
+				'submits'  => false,
+				'supports' => array(),
+				'css'      => 'unstep',
+			),
 		);
 
 		// Fill in the defaults so consumers never have to test for a missing key.

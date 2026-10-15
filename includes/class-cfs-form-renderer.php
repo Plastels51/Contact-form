@@ -22,6 +22,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class CFS_Form_Renderer {
 
 	/**
+	 * ID a modal form's heading must carry to name the window.
+	 *
+	 * The <dialog> always points aria-labelledby here. The heading itself is
+	 * written in the form template, so the author decides whether the window
+	 * has a visible title — and if the ID is absent, the reference simply
+	 * resolves to nothing and the accessible name falls through.
+	 */
+	const DIALOG_LABEL_ID = 'dialog-label';
+
+	/**
 	 * Form being rendered.
 	 *
 	 * @var CFS_Form
@@ -71,6 +81,18 @@ class CFS_Form_Renderer {
 	);
 
 	/**
+	 * Width values a template may ask for.
+	 *
+	 * The help screen documents them, and a list typed out there by hand would
+	 * describe whatever the renderer accepted on the day it was written.
+	 *
+	 * @return string[]
+	 */
+	public static function widths(): array {
+		return array_keys( self::$widths );
+	}
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CFS_Form $form     Form to render.
@@ -106,22 +128,42 @@ class CFS_Form_Renderer {
 		$tag = $is_dialog ? 'dialog' : 'div';
 
 		$html .= sprintf(
-			'<%s class="%s" id="%s">',
+			'<%s class="%s" id="%s"%s>',
 			$tag,
 			esc_attr( $this->wrap_classes( $is_dialog ) ),
-			esc_attr( $wrap_id )
+			esc_attr( $wrap_id ),
+			$is_dialog ? sprintf( ' aria-labelledby="%s"', esc_attr( self::DIALOG_LABEL_ID ) ) : ''
 		);
 
 		if ( $is_dialog ) {
-			$html .= sprintf(
-				'<button type="button" class="cfs-modal-close" data-dialog="%s" aria-label="%s">&#x2715;</button>',
-				esc_attr( $wrap_id ),
-				esc_attr__( 'Закрыть', 'contact-form-submissions' )
-			);
+			$html .= $this->render_modal_close( $wrap_id );
 		}
 
 		$html .= '<div class="cfs-form-message" role="alert" aria-live="polite" style="display:none;"></div>';
-		$html .= $this->render_form_element();
+
+		/*
+		 * The <form> gets a box of its own. In a modal that box is what scrolls,
+		 * which is the whole point: while the <dialog> was its own scroll
+		 * container, the close button — positioned against the dialog — rode up
+		 * and out of view with the content, and the result banner went with it.
+		 * With the scrollport one level in, both stay where they were put.
+		 *
+		 * Outside a modal it is an inert wrapper, and deliberately so: the
+		 * markup a theme writes CSS against should not change shape depending on
+		 * a setting in the admin.
+		 */
+		/*
+		 * data-lenis-prevent only in a modal, and only because the element
+		 * scrolls there. Smooth-scroll libraries (Lenis, and Locomotive 5 built
+		 * on it) turn the wheel into their own animation of the page, which
+		 * overscroll-behavior cannot reach: without the attribute the page
+		 * glides along behind the open window. On a form that does not scroll
+		 * the attribute would be actively harmful — the library would stop
+		 * scrolling the page while the cursor is anywhere over the form.
+		 */
+		$body_attrs = $is_dialog ? ' data-lenis-prevent' : '';
+
+		$html .= '<div class="cfs-form-body"' . $body_attrs . '>' . $this->render_form_element() . '</div>';
 		$html .= sprintf( '</%s>', $tag );
 
 		/**
@@ -193,25 +235,90 @@ class CFS_Form_Renderer {
 	}
 
 	/**
+	 * The close button of a modal form.
+	 *
+	 * The glyph is an icon from the library, not a ✕ character. A character
+	 * is whatever shape the theme's font gives it, it carries the button's
+	 * text metrics rather than a size of its own, and it cannot be swapped
+	 * without editing the plugin. `close` is the default; any other icon in
+	 * the library can be chosen per form.
+	 *
+	 * @param string $wrap_id ID of the <dialog> element.
+	 * @return string
+	 */
+	private function render_modal_close( string $wrap_id ): string {
+		$classes = array_merge(
+			array( 'cfs-modal-close' ),
+			$this->split_classes( (string) ( $this->settings['close_class'] ?? '' ) )
+		);
+
+		$icon = (string) ( $this->settings['close_icon'] ?? '' );
+		if ( '' === $icon ) {
+			$icon = 'close';
+		}
+
+		return sprintf(
+			'<button type="button" class="%s" data-dialog="%s" aria-label="%s">%s</button>',
+			esc_attr( implode( ' ', $classes ) ),
+			esc_attr( $wrap_id ),
+			esc_attr__( 'Закрыть', 'contact-form-submissions' ),
+			CFS_Icons::render( $icon )
+		);
+	}
+
+	/**
 	 * The <form> element with its hidden fields and body.
 	 *
 	 * @return string
 	 */
 	private function render_form_element(): string {
+		$config_id = 'cfs-config-' . $this->uid;
+
 		$attrs = array(
-			'class'          => 'cfs-form',
-			'id'             => 'cfs-form-' . $this->uid,
-			'method'         => 'post',
-			'novalidate'     => true,
-			'data-form-id'   => (string) $this->form->get_id(),
-			'data-instance'  => (string) $this->instance,
-			'data-cfs-config' => (string) wp_json_encode( $this->build_config() ),
+			'class'              => 'cfs-form',
+			'id'                 => 'cfs-form-' . $this->uid,
+			'method'             => 'post',
+			'novalidate'         => true,
+			'data-form-id'       => (string) $this->form->get_id(),
+			'data-instance'      => (string) $this->instance,
+			'data-cfs-config-id' => $config_id,
 		);
 
 		return '<form' . $this->attrs_to_html( $attrs ) . '>'
 			. $this->render_hidden_system_fields()
 			. $this->render_body()
+			. $this->render_config_script( $config_id )
 			. '</form>';
+	}
+
+	/**
+	 * The compiled configuration the front-end script reads.
+	 *
+	 * It travels in a JSON script tag rather than in an attribute: an attribute
+	 * value has to escape every quote as &quot; — six bytes for one — and the
+	 * config is mostly quotes. Unicode and slashes stay unescaped for the same
+	 * reason; the document is UTF-8 either way, and a Russian label written out
+	 * as \uXXXX costs three times its own length. Only "</" is escaped back, so
+	 * a string carrying "</script>" cannot close the tag early.
+	 *
+	 * @param string $config_id ID of the script element.
+	 * @return string
+	 */
+	private function render_config_script( string $config_id ): string {
+		$json = wp_json_encode(
+			$this->build_config(),
+			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+		);
+
+		if ( ! is_string( $json ) || '' === $json ) {
+			$json = '{}';
+		}
+
+		return sprintf(
+			'<script type="application/json" id="%s">%s</script>',
+			esc_attr( $config_id ),
+			str_replace( '</', '<\/', $json )
+		);
 	}
 
 	/**
@@ -272,6 +379,27 @@ class CFS_Form_Renderer {
 		$html = '';
 
 		if ( $multi_step ) {
+			/*
+			 * Whatever stands outside the steps before the first one is the
+			 * form's header, and a header belongs above the progress bar. The
+			 * template cannot say so itself — it never mentions the stepper,
+			 * which the plugin injects — so the leading run is lifted out here
+			 * and everything after it keeps its place in the flow.
+			 */
+			$head = array();
+
+			while ( isset( $rendered[0] ) && CFS_Form_Compiler::NO_STEP === (int) $rendered[0]['step'] ) {
+				$entry = array_shift( $rendered );
+
+				if ( 'unstep' !== $entry['kind'] ) {
+					$head[] = $entry;
+				}
+			}
+
+			foreach ( $head as $entry ) {
+				$html .= $this->render_entry( $entry );
+			}
+
 			$html .= $this->render_stepper();
 			$html .= $this->render_steps( $rendered );
 			$html .= $this->render_step_nav( $submit_tag );
@@ -298,24 +426,54 @@ class CFS_Form_Renderer {
 	 * @return string
 	 */
 	private function render_steps( array $plan ): string {
-		$total  = count( (array) $this->schema['steps'] );
-		$html   = '';
+		$html = '';
+		$open = null;
 
-		for ( $step = 0; $step < $total; $step++ ) {
-			$body = '';
-			foreach ( $plan as $entry ) {
-				if ( (int) $entry['step'] !== $step || 'step' === $entry['kind'] ) {
-					continue;
-				}
-				$body .= $this->render_entry( $entry );
+		/*
+		 * One pass, in template order, opening a panel when the step changes.
+		 *
+		 * A step's entries are always contiguous, so this cannot split one in
+		 * two: an [unstep] region is closed only by the next [step], and that
+		 * [step] begins a new panel rather than resuming the old one. The
+		 * wizard script finds panels by their position in the document and
+		 * would miscount if a step ever owned two of them.
+		 */
+		foreach ( $plan as $entry ) {
+			if ( 'step' === $entry['kind'] || 'unstep' === $entry['kind'] ) {
+				continue;
 			}
 
-			$html .= sprintf(
-				'<div class="cfs-step" data-step="%d"%s>%s</div>',
-				$step,
-				0 === $step ? '' : ' hidden',
-				$body
-			);
+			$step = (int) $entry['step'];
+
+			if ( CFS_Form_Compiler::NO_STEP === $step ) {
+				if ( null !== $open ) {
+					$html .= '</div>';
+					$open  = null;
+				}
+
+				$html .= $this->render_entry( $entry );
+				continue;
+			}
+
+			if ( $open !== $step ) {
+				if ( null !== $open ) {
+					$html .= '</div>';
+				}
+
+				$html .= sprintf(
+					'<div class="cfs-step" data-step="%d"%s>',
+					$step,
+					0 === $step ? '' : ' hidden'
+				);
+
+				$open = $step;
+			}
+
+			$html .= $this->render_entry( $entry );
+		}
+
+		if ( null !== $open ) {
+			$html .= '</div>';
 		}
 
 		return $html;
@@ -359,19 +517,8 @@ class CFS_Form_Renderer {
 	 * @return string
 	 */
 	private function render_step_nav( $submit_tag ): string {
-		$back = sprintf(
-			'<button type="button" class="cfs-btn cfs-btn--back" hidden>%s%s%s</button>',
-			CFS_Icons::render( (string) ( $this->settings['back_icon_before'] ?? '' ) ),
-			esc_html( (string) ( $this->settings['back_text'] ?? '' ) ),
-			''
-		);
-
-		$next = sprintf(
-			'<button type="button" class="cfs-btn cfs-btn--next">%s%s%s</button>',
-			'',
-			esc_html( (string) ( $this->settings['next_text'] ?? '' ) ),
-			CFS_Icons::render( (string) ( $this->settings['next_icon_after'] ?? '' ) )
-		);
+		$back = $this->render_nav_button( 'back', 'cfs-btn--back', true );
+		$next = $this->render_nav_button( 'next', 'cfs-btn--next', false );
 
 		$submit = $this->render_submit_button(
 			is_array( $submit_tag ) ? (array) $submit_tag['attrs'] : array(),
@@ -379,6 +526,41 @@ class CFS_Form_Renderer {
 		);
 
 		return '<div class="cfs-step-nav">' . $back . $next . $submit . '</div>';
+	}
+
+	/**
+	 * One wizard navigation button.
+	 *
+	 * Both buttons take an icon on either side, the way the submit and modal
+	 * buttons do. Which side is filled in is the form author's business: a
+	 * back arrow reads naturally before the word and a next arrow after it,
+	 * but that is a default, not a rule the markup should enforce.
+	 *
+	 * @param string $key          Settings prefix, "back" or "next".
+	 * @param string $modifier     BEM modifier class the stylesheet targets.
+	 * @param bool   $start_hidden Whether the button renders hidden.
+	 * @return string
+	 */
+	private function render_nav_button( string $key, string $modifier, bool $start_hidden ): string {
+		$classes = array_merge(
+			array( 'cfs-btn', $modifier ),
+			$this->split_classes( (string) ( $this->settings[ $key . '_class' ] ?? '' ) )
+		);
+
+		$attrs = array(
+			'type'  => 'button',
+			'class' => implode( ' ', $classes ),
+		);
+
+		if ( $start_hidden ) {
+			$attrs['hidden'] = true;
+		}
+
+		return '<button' . $this->attrs_to_html( $attrs ) . '>'
+			. CFS_Icons::render( (string) ( $this->settings[ $key . '_icon_before' ] ?? '' ) )
+			. esc_html( (string) ( $this->settings[ $key . '_text' ] ?? '' ) )
+			. CFS_Icons::render( (string) ( $this->settings[ $key . '_icon_after' ] ?? '' ) )
+			. '</button>';
 	}
 
 	/**
@@ -528,16 +710,33 @@ class CFS_Form_Renderer {
 		$name = (string) $field['name'];
 		$id   = $this->field_id( $name );
 		$icon = CFS_Icons::render( $this->attr( $field, 'icon' ) );
-		$rows = (int) $this->attr( $field, 'rows', '4' );
+
+		/*
+		 * Two numbers out of one attribute, because two kinds of skin read it.
+		 *
+		 * The rows attribute sizes the field wherever the browser sizes it —
+		 * four by default, never below two, since a one-row <textarea> renders
+		 * as a text input with a resize handle.
+		 *
+		 * The underline skin sizes the field to its content instead, and there
+		 * rows is the resting height rather than the whole story: a field that
+		 * grows as it is filled should start at a single line unless the author
+		 * asked for more. That number goes into CSS as --cfs-rows, written only
+		 * when the author actually named it, so the stylesheet's own default of
+		 * one line answers for everyone else.
+		 */
+		$asked = $this->attr( $field, 'rows' );
+		$rows  = max( 2, (int) ( '' !== $asked ? $asked : '4' ) );
 
 		$attrs = array(
 			'id'               => $id,
 			'name'             => $this->input_name( $field ),
 			'class'            => 'cfs-input cfs-textarea',
 			'data-cfs-field'   => $name,
-			'rows'             => (string) max( 2, $rows ),
+			'rows'             => (string) $rows,
 			'placeholder'      => $this->attr( $field, 'placeholder' ),
 			'aria-describedby' => $id . '-error',
+			'style'            => '' !== $asked ? '--cfs-rows:' . max( 1, (int) $asked ) : '',
 		);
 
 		$maxlength = (string) ( $field['constraints']['maxlength'] ?? '' );
@@ -964,9 +1163,13 @@ class CFS_Form_Renderer {
 				continue;
 			}
 
+			/*
+			 * No label here. The script never reads one — it names a field by
+			 * the <label> already standing beside it — and for an agreement the
+			 * label is a whole paragraph, shipped twice for nothing.
+			 */
 			$fields[ $name ] = array(
 				'type'     => (string) $field['type'],
-				'label'    => (string) $field['label'],
 				'required' => (bool) $field['required'],
 				'multiple' => (bool) $field['multiple'],
 				'error'    => $this->attr( $field, 'error' ),

@@ -566,13 +566,19 @@ class CFS_Form {
 					'modal_button_icon_before' => '',
 					'modal_button_icon_after'  => '',
 					'modal_button_class'       => '',
+					'close_icon'               => 'close',
+					'close_class'              => '',
 					'css_class'                => '',
 					'style_theme'              => '',
 					'save_to_db'               => true,
 					'next_text'                => __( 'Далее', 'contact-form-submissions' ),
 					'back_text'                => __( 'Назад', 'contact-form-submissions' ),
-					'next_icon_after'          => '',
-					'back_icon_before'         => '',
+					'next_icon_before'         => '',
+					'next_icon_after'          => 'angle-small-right',
+					'next_class'               => '',
+					'back_icon_before'         => 'angle-small-left',
+					'back_icon_after'          => '',
+					'back_class'               => '',
 				);
 		}
 

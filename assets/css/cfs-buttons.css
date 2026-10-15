@@ -7,6 +7,31 @@
  */
 
 /* ─────────────────────────────────────────────────────────────
+   HIDDEN BUTTONS
+
+   Every button in this file declares `display`, and an author
+   declaration beats the `display: none` that the user-agent
+   stylesheet attaches to [hidden]. Without this rule the wizard
+   sets the property and nothing happens on screen: "Назад" stays
+   visible on the first step and "Отправить" sits next to "Далее"
+   on every step but the last.
+
+   The nav-scoped selector repeats the rule one specificity step
+   higher, so a theme styling .cfs-btn--submit through its own
+   wrapper class cannot bring the button back by winning on source
+   order.
+   ───────────────────────────────────────────────────────────── */
+.cfs-btn[hidden],
+.cfs-modal-btn[hidden],
+.cfs-modal-close[hidden] {
+	display: none;
+}
+
+.cfs-step-nav .cfs-btn[hidden] {
+	display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
    SUBMIT BUTTON
    ───────────────────────────────────────────────────────────── */
 .cfs-field--submit {
@@ -155,17 +180,35 @@
 	width: 2rem;
 	height: 2rem;
 	padding: 0;
-	background: none;
+
+	/*
+	 * The dialog's own colour rather than none: the button sits over the top of
+	 * the scrollport, and the form passes under it. How far under depends on how
+	 * tall the button renders — a theme that gives buttons a min-height makes it
+	 * hang lower — so the fill is what guarantees the ✕ stays readable instead
+	 * of a line of text showing through it.
+	 */
+	background: var(--cfs-bg, #fff);
 	border: 1px solid transparent;
 	border-radius: var(--cfs-radius, 4px);
-	font-size: 1.1em;
-	line-height: 1;
 	color: #888;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	transition: color 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+/*
+ * The glyph is an icon, so it is sized here rather than through the
+ * button's font-size — the button holds no text to size against.
+ * currentColor carries the hover and focus colours above into the SVG.
+ */
+.cfs-modal-close>svg {
+	width: 1rem;
+	height: 1rem;
+	fill: currentColor;
+	pointer-events: none;
 }
 
 .cfs-modal-close:hover {

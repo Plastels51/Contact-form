@@ -235,6 +235,7 @@ class CFS_Admin {
 		register_setting( 'cfs_settings_group', 'cfs_save_ip', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_save_ua', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_style_theme', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'cfs_settings_group', CFS_Icons::OPTION_DIR, array( 'sanitize_callback' => array( 'CFS_Icons', 'sanitize_option' ) ) );
 		register_setting( 'cfs_settings_group', 'cfs_disable_styles', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_disable_btn_styles', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'cfs_settings_group', 'cfs_debug_mode', array( 'sanitize_callback' => 'sanitize_text_field' ) );
@@ -1074,6 +1075,60 @@ class CFS_Admin {
 						</td>
 					</tr>
 					<tr>
+						<th><?php esc_html_e( 'Директория с иконками', 'contact-form-submissions' ); ?></th>
+						<td>
+							<?php
+							$icon_dir_option = (string) get_option( CFS_Icons::OPTION_DIR, '' );
+							$icon_dir_found  = CFS_Icons::directory_icons();
+							$icon_dir_names  = array_keys( $icon_dir_found );
+							$icon_dir_more   = count( $icon_dir_names ) > 12;
+
+							if ( $icon_dir_more ) {
+								$icon_dir_names = array_slice( $icon_dir_names, 0, 12 );
+							}
+							?>
+							<code>wp-content/</code>
+							<input type="text" name="<?php echo esc_attr( CFS_Icons::OPTION_DIR ); ?>" value="<?php echo esc_attr( $icon_dir_option ); ?>" class="regular-text" placeholder="themes/моя-тема/assets/icons">
+
+							<?php if ( '' === $icon_dir_option ) : ?>
+								<p class="description">
+									<?php
+									printf(
+										/* translators: %d: number of icons in the built-in set. */
+										esc_html__( 'Пусто — работает встроенный набор, иконок: %d.', 'contact-form-submissions' ),
+										count( CFS_Icons::keys() )
+									);
+									?>
+								</p>
+							<?php elseif ( '' === CFS_Icons::directory() ) : ?>
+								<p class="description" style="color:#b32d2e;">
+									<?php esc_html_e( 'Директория недоступна — работает встроенный набор.', 'contact-form-submissions' ); ?>
+								</p>
+							<?php elseif ( empty( $icon_dir_found ) ) : ?>
+								<p class="description" style="color:#b32d2e;">
+									<?php esc_html_e( 'В директории нет подходящих файлов — работает встроенный набор.', 'contact-form-submissions' ); ?>
+								</p>
+							<?php else : ?>
+								<p class="description">
+									<?php
+									printf(
+										/* translators: 1: icons read from the directory, 2: how many of them replaced a built-in icon, 3: size of the resulting library. */
+										esc_html__( 'Прочитано из директории: %1$d, из них заменили одноимённые встроенные: %2$d. Остальной встроенный набор остался, всего доступно иконок: %3$d.', 'contact-form-submissions' ),
+										count( $icon_dir_found ),
+										count( array_intersect( array_keys( $icon_dir_found ), CFS_Icons::builtin_keys() ) ),
+										count( CFS_Icons::keys() )
+									);
+									?>
+									<br><code><?php echo esc_html( implode( ', ', $icon_dir_names ) . ( $icon_dir_more ? ' …' : '' ) ); ?></code>
+								</p>
+							<?php endif; ?>
+
+							<p class="description">
+								<?php esc_html_e( 'Файлы *.svg внутри wp-content. Имя файла становится именем иконки; файл с именем встроенной иконки заменяет её, остальные встроенные остаются. Цвет должен наследоваться — currentColor или вовсе без атрибута fill: зашитый цвет плагин не перекрасит.', 'contact-form-submissions' ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
 						<th><?php esc_html_e( 'Отключить стили', 'contact-form-submissions' ); ?></th>
 						<td>
 							<label style="display: block; margin-bottom: 0.4rem;">
@@ -1105,96 +1160,323 @@ class CFS_Admin {
 
 	/**
 	 * Render help page.
+	 *
+	 * One array drives the whole page: it is the table of contents, it supplies
+	 * every heading, and its keys name the methods that render the sections. A
+	 * section cannot end up in the contents and nowhere on the page, or carry a
+	 * heading different from its link.
+	 *
+	 * The reference parts are generated from the registries they describe —
+	 * field types, their attributes, the widths the renderer accepts, the icon
+	 * names in the library, the reserved field names. A list typed out by hand
+	 * here goes stale the first time the code changes.
 	 */
 	public function page_help(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		$types = CFS_Field_Types::all();
+		$sections = array(
+			'basics'      => __( 'С чего начать', 'contact-form-submissions' ),
+			'syntax'      => __( 'Синтаксис тега', 'contact-form-submissions' ),
+			'types'       => __( 'Типы полей', 'contact-form-submissions' ),
+			'attributes'  => __( 'Общие атрибуты, ширина, роли', 'contact-form-submissions' ),
+			'examples'    => __( 'Примеры', 'contact-form-submissions' ),
+			'steps'       => __( 'Шаги и мастер', 'contact-form-submissions' ),
+			'icons'       => __( 'Иконки', 'contact-form-submissions' ),
+			'buttons'     => __( 'Кнопки, классы и оформление', 'contact-form-submissions' ),
+			'after'       => __( 'После отправки', 'contact-form-submissions' ),
+			'mail'        => __( 'Письма', 'contact-form-submissions' ),
+			'actions'     => __( 'Интеграции', 'contact-form-submissions' ),
+			'submissions' => __( 'Заявки, выгрузка и защита', 'contact-form-submissions' ),
+			'html'        => __( 'HTML в шаблоне', 'contact-form-submissions' ),
+			'hooks'       => __( 'Хуки для разработчиков', 'contact-form-submissions' ),
+		);
 		?>
 		<div class="wrap cfs-help">
 			<h1><?php esc_html_e( 'Помощь', 'contact-form-submissions' ); ?></h1>
 
-			<h2><?php esc_html_e( 'Как это устроено', 'contact-form-submissions' ); ?></h2>
-			<p>
-				<?php esc_html_e( 'Форма создаётся в разделе «Заявки → Формы». Её содержимое — обычный текст: всё, что в квадратных скобках, становится полем ввода, всё остальное выводится как HTML.', 'contact-form-submissions' ); ?>
-			</p>
-			<p>
-				<?php esc_html_e( 'Готовую форму выводит шорткод с её номером:', 'contact-form-submissions' ); ?>
-				<code>[contact_form id="12"]</code> <?php esc_html_e( 'или', 'contact-form-submissions' ); ?> <code>[contact_form slug="callback"]</code>.
-			</p>
+			<nav class="cfs-help-toc">
+				<?php foreach ( $sections as $anchor => $label ) : ?>
+					<a href="#cfs-help-<?php echo esc_attr( $anchor ); ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endforeach; ?>
+			</nav>
 
-			<h2><?php esc_html_e( 'Синтаксис тега', 'contact-form-submissions' ); ?></h2>
-			<pre class="cfs-help-code">[тип* имя атрибут="значение"]</pre>
-			<ul class="cfs-help-list">
-				<li><code>тип</code> — <?php esc_html_e( 'какое это поле; список ниже.', 'contact-form-submissions' ); ?></li>
-				<li><code>*</code> — <?php esc_html_e( 'поле обязательное. Без звёздочки — необязательное.', 'contact-form-submissions' ); ?></li>
-				<li><code>имя</code> — <?php esc_html_e( 'латиницей; под этим именем значение попадёт в заявку, письмо и CRM. Если не указать — плагин подставит имя по типу.', 'contact-form-submissions' ); ?></li>
-				<li><?php esc_html_e( 'Атрибуты — в любом порядке. Значение в кавычках может содержать пробелы и скобки.', 'contact-form-submissions' ); ?></li>
-				<li><code>[# текст]</code> — <?php esc_html_e( 'комментарий, в форму не попадает.', 'contact-form-submissions' ); ?></li>
-				<li><code>\[</code> — <?php esc_html_e( 'обычная квадратная скобка в тексте.', 'contact-form-submissions' ); ?></li>
-			</ul>
-
-			<h2><?php esc_html_e( 'Типы полей', 'contact-form-submissions' ); ?></h2>
-			<table class="widefat striped cfs-help-table">
-				<thead>
-					<tr>
-						<th style="width:18%"><?php esc_html_e( 'Тип', 'contact-form-submissions' ); ?></th>
-						<th style="width:26%"><?php esc_html_e( 'Что это', 'contact-form-submissions' ); ?></th>
-						<th><?php esc_html_e( 'Свои атрибуты', 'contact-form-submissions' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php foreach ( $types as $type => $descriptor ) : ?>
-						<?php
-						$own = array_values(
-							array_diff(
-								(array) $descriptor['supports'],
-								CFS_Field_Types::COMMON_SUPPORTS
-							)
-						);
-						?>
-						<tr>
-							<td><code><?php echo esc_html( $type ); ?></code></td>
-							<td><?php echo esc_html( (string) $descriptor['label'] ); ?></td>
-							<td><?php echo '' !== implode( '', $own ) ? '<code>' . esc_html( implode( '</code>, <code>', $own ) ) . '</code>' : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
-						</tr>
-					<?php endforeach; ?>
-				</tbody>
-			</table>
-			<p class="description">
+			<?php foreach ( $sections as $anchor => $label ) : ?>
+				<h2 id="cfs-help-<?php echo esc_attr( $anchor ); ?>"><?php echo esc_html( $label ); ?></h2>
 				<?php
-				printf(
-					/* translators: %s: list of common attributes */
-					esc_html__( 'Общие атрибуты для всех полей ввода: %s.', 'contact-form-submissions' ),
-					'<code>' . esc_html( implode( '</code>, <code>', CFS_Field_Types::COMMON_SUPPORTS ) ) . '</code>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				);
+				$method = 'help_' . $anchor;
+				$this->$method();
 				?>
-			</p>
+			<?php endforeach; ?>
+		</div>
+		<style>
+			.cfs-help-code{background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px;overflow-x:auto;}
+			.cfs-help-list li{margin-bottom:4px;}
+			.cfs-help-table{margin-bottom:8px;}
+			.cfs-help-toc{margin:12px 0 4px;}
+			.cfs-help-toc a{display:inline-block;margin:0 12px 6px 0;}
+			.cfs-help h2{margin-top:32px;padding-top:8px;border-top:1px solid #dcdcde;}
+			.cfs-help-names code{display:inline-block;margin:0 4px 4px 0;}
+		</style>
+		<?php
+	}
 
-			<h2><?php esc_html_e( 'Примеры', 'contact-form-submissions' ); ?></h2>
+	/**
+	 * A list of values rendered as <code> chips.
+	 *
+	 * Escaping happens per value on purpose. esc_html() over an already-joined
+	 * string escapes the separators too, and the help screen used to print a
+	 * literal "&lt;/code&gt;, &lt;code&gt;" between attribute names because of it.
+	 *
+	 * @param array $values Values to list.
+	 * @return string Safe HTML, or an em dash for an empty list.
+	 */
+	private function help_codes( array $values ): string {
+		$values = array_filter( array_map( 'strval', $values ), function ( string $value ): bool {
+			return '' !== $value;
+		} );
 
-			<p><strong><?php esc_html_e( 'Обратный звонок:', 'contact-form-submissions' ); ?></strong></p>
-			<pre class="cfs-help-code">[name* first_name label="Имя" icon="user"]
+		if ( empty( $values ) ) {
+			return '—';
+		}
+
+		return '<code>' . implode( '</code>, <code>', array_map( 'esc_html', $values ) ) . '</code>';
+	}
+
+	/**
+	 * Help: what the plugin is and how a form gets onto a page.
+	 */
+	private function help_basics(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'Формы создаются в разделе «Заявки → Формы». Форма — это текст: всё, что стоит в квадратных скобках, становится полем ввода, всё остальное выводится как обычный HTML, поэтому вёрстка вокруг полей остаётся вашей.', 'contact-form-submissions' ); ?>
+		</p>
+		<p>
+			<?php esc_html_e( 'Шаблон разбирается один раз — при сохранении формы. Ошибки и предупреждения показываются тут же, с номером строки, а не всплывают при первой заявке.', 'contact-form-submissions' ); ?>
+		</p>
+		<p>
+			<?php esc_html_e( 'Готовую форму выводит шорткод:', 'contact-form-submissions' ); ?>
+			<code>[contact_form id="12"]</code>
+		</p>
+		<table class="widefat striped cfs-help-table">
+			<thead>
+				<tr>
+					<th style="width:18%"><?php esc_html_e( 'Атрибут шорткода', 'contact-form-submissions' ); ?></th>
+					<th><?php esc_html_e( 'Что делает', 'contact-form-submissions' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td><code>id</code></td>
+					<td><?php esc_html_e( 'Номер формы. В списке форм шорткод копируется в один клик.', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><code>slug</code></td>
+					<td><?php esc_html_e( 'Ярлык формы вместо номера — он переживает перенос формы на другой сайт, где номер будет другим.', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><code>class</code></td>
+					<td><?php esc_html_e( 'Дополнительные CSS-классы формы — в добавление к тем, что заданы в самой форме.', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><code>container</code></td>
+					<td><?php esc_html_e( 'div — форма прямо на странице, dialog — модальное окно по кнопке. Переопределяет настройку формы для этого места вывода.', 'contact-form-submissions' ); ?></td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="description">
+			<?php esc_html_e( 'Одну форму можно вывести на странице несколько раз: экземпляры не мешают друг другу, у каждого свои идентификаторы полей.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: the anatomy of a field tag.
+	 */
+	private function help_syntax(): void {
+		$reserved = CFS_Form_Compiler::RESERVED_NAMES;
+		?>
+		<pre class="cfs-help-code">[тип* имя атрибут="значение"]</pre>
+		<ul class="cfs-help-list">
+			<li><code>тип</code> — <?php esc_html_e( 'какое это поле; список ниже. Обязателен и идёт первым.', 'contact-form-submissions' ); ?></li>
+			<li><code>*</code> — <?php esc_html_e( 'поле обязательное. Без звёздочки — необязательное.', 'contact-form-submissions' ); ?></li>
+			<li><code>имя</code> — <?php esc_html_e( 'латиницей; под этим именем значение попадёт в заявку, письмо и CRM. Если не указать — плагин подставит имя по типу: email, email_2 и так далее.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Атрибуты — в любом порядке. Значение в кавычках может содержать пробелы и даже скобки:', 'contact-form-submissions' ); ?> <code>label="Согласен [с условиями]"</code>.</li>
+			<li><?php esc_html_e( 'Строка в кавычках без имени атрибута — это метка поля, а у [submit] — текст кнопки.', 'contact-form-submissions' ); ?></li>
+			<li><code>[# текст]</code> — <?php esc_html_e( 'комментарий, в форму не попадает.', 'contact-form-submissions' ); ?></li>
+			<li><code>\[</code> <?php esc_html_e( 'и', 'contact-form-submissions' ); ?> <code>\]</code> — <?php esc_html_e( 'обычные квадратные скобки в тексте.', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<p class="description cfs-help-names">
+			<?php esc_html_e( 'Эти имена заняты плагином, полю их дать нельзя:', 'contact-form-submissions' ); ?>
+			<?php foreach ( $reserved as $name ) : ?>
+				<code><?php echo esc_html( $name ); ?></code>
+			<?php endforeach; ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: the field type table, generated from the registry.
+	 */
+	private function help_types(): void {
+		$types = CFS_Field_Types::all();
+		?>
+		<table class="widefat striped cfs-help-table">
+			<thead>
+				<tr>
+					<th style="width:18%"><?php esc_html_e( 'Тип', 'contact-form-submissions' ); ?></th>
+					<th style="width:26%"><?php esc_html_e( 'Что это', 'contact-form-submissions' ); ?></th>
+					<th><?php esc_html_e( 'Свои атрибуты', 'contact-form-submissions' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $types as $type => $descriptor ) : ?>
+					<?php
+					$own = array_values(
+						array_diff(
+							(array) $descriptor['supports'],
+							CFS_Field_Types::COMMON_SUPPORTS
+						)
+					);
+					?>
+					<tr>
+						<td><code><?php echo esc_html( $type ); ?></code></td>
+						<td><?php echo esc_html( (string) $descriptor['label'] ); ?></td>
+						<td><?php echo $this->help_codes( $own ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- help_codes() escapes every value. ?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<p class="description">
+			<?php
+			$aliases = array();
+			foreach ( CFS_Field_Types::ALIASES as $alias => $canonical ) {
+				$aliases[] = $alias . ' → ' . $canonical;
+			}
+
+			printf(
+				/* translators: %s: list of type aliases, e.g. "tel → phone". */
+				esc_html__( 'Привычные синонимы тоже понимаются: %s.', 'contact-form-submissions' ),
+				$this->help_codes( $aliases ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- help_codes() escapes every value.
+			);
+			?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Неизвестный тип, повтор имени и список без options — это ошибки: форма сохранится, но выводиться не будет. Забытый [submit], незакрытый тег и незнакомый атрибут — предупреждения: форма работает, но стоит посмотреть.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: attributes every input field understands, widths and roles.
+	 */
+	private function help_attributes(): void {
+		$hints = array(
+			'label'       => __( 'Подпись поля.', 'contact-form-submissions' ),
+			'placeholder' => __( 'Подсказка внутри поля.', 'contact-form-submissions' ),
+			'default'     => __( 'Значение, с которым поле открывается.', 'contact-form-submissions' ),
+			'class'       => __( 'Дополнительные CSS-классы поля.', 'contact-form-submissions' ),
+			'icon'        => __( 'Иконка внутри поля — имя из набора.', 'contact-form-submissions' ),
+			'help'        => __( 'Пояснение под полем.', 'contact-form-submissions' ),
+			'error'       => __( 'Свой текст ошибки вместо стандартного.', 'contact-form-submissions' ),
+			'role'        => __( 'В какую колонку заявки попадёт значение.', 'contact-form-submissions' ),
+			'width'       => __( 'Ширина поля в строке.', 'contact-form-submissions' ),
+		);
+		?>
+		<table class="widefat striped cfs-help-table">
+			<thead>
+				<tr>
+					<th style="width:18%"><?php esc_html_e( 'Атрибут', 'contact-form-submissions' ); ?></th>
+					<th><?php esc_html_e( 'Что делает', 'contact-form-submissions' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( CFS_Field_Types::COMMON_SUPPORTS as $attribute ) : ?>
+					<tr>
+						<td><code><?php echo esc_html( $attribute ); ?></code></td>
+						<td><?php echo esc_html( (string) ( $hints[ $attribute ] ?? '' ) ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<h3><?php esc_html_e( 'Ширина и строки', 'contact-form-submissions' ); ?></h3>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: list of accepted width values. */
+				esc_html__( 'Значения width: %s. Поля становятся в строку, если обернуть их в блок с классом cfs-row.', 'contact-form-submissions' ),
+				$this->help_codes( CFS_Form_Renderer::widths() ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- help_codes() escapes every value.
+			);
+			?>
+		</p>
+		<pre class="cfs-help-code">&lt;div class="cfs-row"&gt;
+	[name* first_name label="Имя" width="1/2"]
+	[phone* phone label="Телефон" width="1/2"]
+&lt;/div&gt;</pre>
+
+		<h3><?php esc_html_e( 'Роли', 'contact-form-submissions' ); ?></h3>
+		<p>
+			<?php
+			printf(
+				/* translators: %s: list of roles — the columns of the submissions table. */
+				esc_html__( 'У списка заявок есть собственные колонки: %s. Роль говорит, значение какого поля туда попадёт; по ней же работают колонки в списке и поиск.', 'contact-form-submissions' ),
+				$this->help_codes( CFS_Form_Compiler::ROLES ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- help_codes() escapes every value.
+			);
+			?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Тип поля назначает роль сам: name → name, email → email, phone → phone, textarea → comment. Атрибут role переопределяет это решение, например role="comment" у текстового поля. Роль занимает первое поле, которое её попросило; второму компилятор выдаст предупреждение — в заявке останутся оба значения, но колонка достанется первому.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: ready-made snippets.
+	 */
+	private function help_examples(): void {
+		?>
+		<p><strong><?php esc_html_e( 'Обратный звонок:', 'contact-form-submissions' ); ?></strong></p>
+		<pre class="cfs-help-code">[name* first_name label="Имя" icon="user"]
 [phone* phone label="Телефон" icon="phone"]
 [submit "Жду звонка"]</pre>
 
-			<p><strong><?php esc_html_e( 'Два поля в строку:', 'contact-form-submissions' ); ?></strong></p>
-			<pre class="cfs-help-code">&lt;div class="cfs-row"&gt;
-	[name* first_name label="Имя" width="1/2"]
-	[phone* phone label="Телефон" width="1/2"]
-&lt;/div&gt;
-[submit "Отправить"]</pre>
-
-			<p><strong><?php esc_html_e( 'Список и согласие:', 'contact-form-submissions' ); ?></strong></p>
-			<pre class="cfs-help-code">[select* topic label="Тема" options="Консультация:consult,Расчёт:calc"]
+		<p><strong><?php esc_html_e( 'Список, комментарий и согласие:', 'contact-form-submissions' ); ?></strong></p>
+		<pre class="cfs-help-code">[select* topic label="Тема" options="Консультация:consult,Расчёт:calc"]
 [textarea comment label="Комментарий" rows="4"]
 [agreement* consent label="Я согласен с &lt;a href='/privacy/'&gt;политикой&lt;/a&gt;"]
 [submit "Отправить"]</pre>
+		<p class="description">
+			<?php esc_html_e( 'options — пары «что видно:что сохранится», через запятую. Если двоеточия нет, сохранится сама подпись.', 'contact-form-submissions' ); ?>
+		</p>
 
-			<p><strong><?php esc_html_e( 'Мастер в два шага:', 'contact-form-submissions' ); ?></strong></p>
-			<pre class="cfs-help-code">[step label="Контакты"]
+		<p><strong><?php esc_html_e( 'Скрытое поле с меткой из адреса страницы:', 'contact-form-submissions' ); ?></strong></p>
+		<pre class="cfs-help-code">[hidden utm_source source="query:utm_source"]
+[hidden page source="page:title"]</pre>
+		<p class="description">
+			<?php esc_html_e( 'Источники: query:параметр, cookie:имя, page:url|title|id, user:email|login|name|id. Первые два подставляются в браузере — под кэшем страниц в HTML иначе вмёрзло бы значение первого посетителя.', 'contact-form-submissions' ); ?>
+		</p>
+
+		<p><strong><?php esc_html_e( 'Заголовок модального окна:', 'contact-form-submissions' ); ?></strong></p>
+		<pre class="cfs-help-code">&lt;h2 id="dialog-label"&gt;Расскажите, что случилось&lt;/h2&gt;
+[name* first_name label="Имя"]
+[submit "Отправить"]</pre>
+		<p class="description">
+			<?php esc_html_e( 'Форма в модальном окне всегда выводится с aria-labelledby="dialog-label". Заголовок с этим id даёт окну и видимую подпись, и имя для скринридера: без него диктор объявит безымянный диалог и начнёт читать с первого поля. Идентификатор один на страницу — двум модальным формам на одной странице он не подойдёт.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: multi-step forms.
+	 */
+	private function help_steps(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'Тег [step] делит шаблон на панели, и посетитель видит их по одной. Кнопки «Назад» и «Далее», полоса шагов и проверка полей текущего шага появляются сами.', 'contact-form-submissions' ); ?>
+		</p>
+		<pre class="cfs-help-code">[step label="Контакты"]
 [name* first_name label="Имя"]
 [phone* phone label="Телефон"]
 
@@ -1204,61 +1486,297 @@ class CFS_Admin {
 
 [submit "Готово"]</pre>
 
-			<p><strong><?php esc_html_e( 'UTM-метка из адреса страницы:', 'contact-form-submissions' ); ?></strong></p>
-			<pre class="cfs-help-code">[hidden utm_source source="query:utm_source"]</pre>
-			<p class="description">
-				<?php esc_html_e( 'Источники: query:параметр, cookie:имя, page:url|title|id, user:email|login|name|id.', 'contact-form-submissions' ); ?>
-			</p>
+		<p>
+			<?php esc_html_e( 'Тег [unstep] закрывает шаги: всё, что идёт после него, не принадлежит ни одной панели и остаётся на экране, пока шаги под ним меняются, — заголовок формы, согласие, телефон отдела. Следующий [step] открывает новую панель.', 'contact-form-submissions' ); ?>
+		</p>
+		<pre class="cfs-help-code">[unstep]
+[agreement* consent label="Я согласен с обработкой данных"]
+[submit "Готово"]</pre>
 
-			<h2><?php esc_html_e( 'Подстановки в письмах', 'contact-form-submissions' ); ?></h2>
-			<p>
-				<?php esc_html_e( 'В теме и тексте письма работают подстановки в фигурных скобках: имя поля подставит его значение, {all_fields} — таблицу всех полей. Полный список доступных подстановок показан прямо над полями на вкладке «Письма» той формы, которую вы редактируете.', 'contact-form-submissions' ); ?>
-			</p>
-			<pre class="cfs-help-code">Тема: Заявка от {first_name}
+		<ul class="cfs-help-list">
+			<li><?php esc_html_e( 'Поле вне шагов проверяется вместе со всеми: обязательным оно остаётся на любом шаге.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Пустых шагов не бывает: [step], которому нечего отделять, просто переименует текущий шаг.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Текст, иконки и классы кнопок «Назад» и «Далее» — на вкладке «Дополнительно».', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Без [step] в шаблоне тег [unstep] не делает ничего: выходить неоткуда.', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<?php
+	}
+
+	/**
+	 * Help: icons, the library and the directory setting.
+	 */
+	private function help_icons(): void {
+		$keys = CFS_Icons::keys();
+		?>
+		<p>
+			<?php esc_html_e( 'Иконка поля — атрибут icon, у кнопки — icon_before и icon_after. Имя берётся из набора; генератор тегов в редакторе формы показывает набор списком, с картинками.', 'contact-form-submissions' ); ?>
+		</p>
+		<pre class="cfs-help-code">[phone* phone label="Телефон" icon="phone"]
+[submit "Отправить" icon_after="arrow-right"]</pre>
+
+		<p class="description cfs-help-names">
+			<?php
+			printf(
+				/* translators: %d: number of icons currently available. */
+				esc_html__( 'Сейчас доступно имён: %d.', 'contact-form-submissions' ),
+				count( $keys )
+			);
+			?>
+			<br>
+			<?php foreach ( $keys as $key ) : ?>
+				<code><?php echo esc_html( $key ); ?></code>
+			<?php endforeach; ?>
+		</p>
+
+		<h3><?php esc_html_e( 'Свои иконки', 'contact-form-submissions' ); ?></h3>
+		<p>
+			<?php esc_html_e( '«Заявки → Настройки → Директория с иконками» принимает путь относительно wp-content, например themes/моя-тема/assets/icons. Каждый файл *.svg прямо в этой папке становится иконкой с именем файла.', 'contact-form-submissions' ); ?>
+		</p>
+		<p>
+			<?php esc_html_e( 'Набор из папки накладывается на встроенный по именам: user.svg заменит встроенную иконку user, а имена, которых в папке нет, останутся встроенными. Это важно для иконок, которые выбирает сам плагин, а не шаблон: крестик модального окна close и шевроны мастера angle-small-left и angle-small-right.', 'contact-form-submissions' ); ?>
+		</p>
+		<ul class="cfs-help-list">
+			<li><?php esc_html_e( 'Имя файла — латиница, цифры, дефис и подчёркивание. Файл с кириллическим именем пропускается.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Цвет должен наследоваться: currentColor или вовсе без атрибута fill. Зашитый цвет плагин не перекрасит.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Файл читается до 64 КБ и чистится при чтении: скрипты, ссылки, внешние картинки и текст вырезаются — иконка это геометрия.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Правка файла подхватывается сама, чистить кэш вручную не нужно.', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<p>
+			<?php esc_html_e( 'Добавить иконку кодом или, наоборот, оставить только свою папку можно фильтром — он отрабатывает последним:', 'contact-form-submissions' ); ?>
+		</p>
+		<pre class="cfs-help-code">// Добавить одну иконку.
+add_filter( 'cfs_icon_library', function ( array $icons ): array {
+	$icons['rocket'] = '&lt;svg …&gt;…&lt;/svg&gt;';
+	return $icons;
+} );
+
+// Оставить только иконки из своей директории.
+add_filter( 'cfs_icon_library', function ( array $icons ): array {
+	$own = CFS_Icons::directory_icons();
+	return empty( $own ) ? $icons : $own;
+} );</pre>
+		<?php
+	}
+
+	/**
+	 * Help: the buttons, their CSS classes and the look of the form.
+	 */
+	private function help_buttons(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'В шаблоне описывается только кнопка отправки — у неё есть атрибут class. Остальные кнопки рисует сам плагин, поэтому их текст, иконки и классы задаются на вкладке «Дополнительно» редактора формы.', 'contact-form-submissions' ); ?>
+		</p>
+		<pre class="cfs-help-code">[submit "Отправить" class="btn btn--primary" icon_after="arrow-right"]</pre>
+
+		<table class="widefat striped cfs-help-table">
+			<thead>
+				<tr>
+					<th style="width:20%"><?php esc_html_e( 'Элемент', 'contact-form-submissions' ); ?></th>
+					<th style="width:32%"><?php esc_html_e( 'Где задать классы', 'contact-form-submissions' ); ?></th>
+					<th style="width:26%"><?php esc_html_e( 'Базовые классы', 'contact-form-submissions' ); ?></th>
+					<th><?php esc_html_e( 'Когда выводится', 'contact-form-submissions' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td><?php esc_html_e( 'Кнопка отправки', 'contact-form-submissions' ); ?></td>
+					<td><?php esc_html_e( 'Атрибут class у тега [submit]', 'contact-form-submissions' ); ?></td>
+					<td><code>cfs-btn cfs-btn--submit</code></td>
+					<td><?php esc_html_e( 'всегда', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Кнопка «Далее»', 'contact-form-submissions' ); ?></td>
+					<td><?php esc_html_e( 'Дополнительно → Кнопка «Далее» → CSS-классы', 'contact-form-submissions' ); ?></td>
+					<td><code>cfs-btn cfs-btn--next</code></td>
+					<td><?php esc_html_e( 'в шаблоне есть [step]', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Кнопка «Назад»', 'contact-form-submissions' ); ?></td>
+					<td><?php esc_html_e( 'Дополнительно → Кнопка «Назад» → CSS-классы', 'contact-form-submissions' ); ?></td>
+					<td><code>cfs-btn cfs-btn--back</code></td>
+					<td><?php esc_html_e( 'в шаблоне есть [step]', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Кнопка, открывающая окно', 'contact-form-submissions' ); ?></td>
+					<td><?php esc_html_e( 'Дополнительно → Кнопка модального окна → CSS-классы', 'contact-form-submissions' ); ?></td>
+					<td><code>cfs-modal-btn</code></td>
+					<td><?php esc_html_e( 'контейнер — модальное окно', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Кнопка закрытия окна', 'contact-form-submissions' ); ?></td>
+					<td><?php esc_html_e( 'Дополнительно → Кнопка закрытия окна → CSS-классы', 'contact-form-submissions' ); ?></td>
+					<td><code>cfs-modal-close</code></td>
+					<td><?php esc_html_e( 'контейнер — модальное окно', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Форма целиком', 'contact-form-submissions' ); ?></td>
+					<td><?php esc_html_e( 'Дополнительно → CSS-класс формы, либо атрибут class у шорткода', 'contact-form-submissions' ); ?></td>
+					<td><code>cfs-form</code></td>
+					<td><?php esc_html_e( 'всегда', 'contact-form-submissions' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Отдельное поле', 'contact-form-submissions' ); ?></td>
+					<td><?php esc_html_e( 'Атрибут class у тега поля', 'contact-form-submissions' ); ?></td>
+					<td><code>cfs-field cfs-field--тип</code></td>
+					<td><?php esc_html_e( 'всегда', 'contact-form-submissions' ); ?></td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="description">
+			<?php esc_html_e( 'Ваши классы добавляются к базовым, а не заменяют их: у кнопки останется и cfs-btn--submit, и ваш btn--primary. Несколько классов пишутся через пробел, недопустимые символы вырезаются.', 'contact-form-submissions' ); ?>
+		</p>
+
+		<h3><?php esc_html_e( 'Если стили плагина мешают', 'contact-form-submissions' ); ?></h3>
+		<ul class="cfs-help-list">
+			<li><?php esc_html_e( 'Плагин не использует !important, и самый тяжёлый его селектор весит четыре класса, поэтому правило темы перебивает оформление обычным путём.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'В «Настройках» можно отключить только стили кнопок или все стили плагина сразу.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Оформление полей — обычное, подчёркнутое, рамка с вырезом, заливка, карточка, метка слева — выбирается в «Настройках» для всего сайта и переопределяется на вкладке «Дополнительно» для отдельной формы.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'К SVG-иконкам классы не добавляются: стили идут через родителя, например .cfs-btn--submit > svg.', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<?php
+	}
+
+	/**
+	 * Help: the "After submit" tab.
+	 */
+	private function help_after(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'Вкладка «После отправки» решает, что увидит посетитель, когда заявка принята. Ответ приходит с сервера, поэтому дублировать это поведение в теме не нужно.', 'contact-form-submissions' ); ?>
+		</p>
+		<ul class="cfs-help-list">
+			<li><?php esc_html_e( 'Сообщение на месте формы — или переход на другую страницу с задержкой в секундах.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Очистить поля, прокрутить к сообщению, закрыть модальное окно — три независимых переключателя.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Свои тексты для четырёх отказов: ошибка проверки, спам, слишком частые отправки, ошибка сервера. Пустое поле — текст по умолчанию.', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<p class="description">
+			<?php esc_html_e( 'Там же, на вкладке «Дополнительно», хранение можно выключить: тогда заявка не попадёт в базу, а только уйдёт в письмо и в интеграции.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: mail templates and their placeholders.
+	 */
+	private function help_mail(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'У формы два письма: администратору и автоответ отправителю. Каждое включается отдельно и имеет свои получателей, тему и тело.', 'contact-form-submissions' ); ?>
+		</p>
+		<pre class="cfs-help-code">Тема:  Заявка от {first_name}
 Текст: {all_fields}
 
-Служебные: {site_name} {form_title} {submission_id} {admin_url} {date} {ip} {page_url}</pre>
+Служебные: {site_name} {form_title} {submission_id} {admin_url} {date} {ip} {page_url} {user_agent}</pre>
+		<ul class="cfs-help-list">
+			<li><code>{имя_поля}</code> — <?php esc_html_e( 'значение поля,', 'contact-form-submissions' ); ?> <code>{имя_поля_label}</code> — <?php esc_html_e( 'его подпись.', 'contact-form-submissions' ); ?></li>
+			<li><code>{all_fields}</code> — <?php esc_html_e( 'таблица всех заполненных полей.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Полный список подстановок для конкретной формы показан прямо над полями на вкладке «Письма».', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<p class="description">
+			<?php esc_html_e( 'Отправителем всегда остаётся адрес сайта, а адрес посетителя подставляется в Reply-To: письмо «от» чужого домена без SPF и DKIM уходит в спам. В поля получателей подстановки ставить можно — переводы строк из них вырезаются, заголовок письма подделать не выйдет.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
 
-			<h2><?php esc_html_e( 'HTML в шаблоне', 'contact-form-submissions' ); ?></h2>
-			<p>
-				<?php esc_html_e( 'Вокруг полей можно писать обычную разметку: заголовки, абзацы, списки, таблицы, ссылки, картинки. Опасные теги (script, iframe) и обработчики событий вырезаются при сохранении. Поля формы (input, select) вручную вставлять нельзя — их значения всё равно не будут приняты.', 'contact-form-submissions' ); ?>
-			</p>
+	/**
+	 * Help: integrations and the action log.
+	 */
+	private function help_actions(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'Интеграции добавляются дополнениями. Дополнение один раз описывает себя и свои настройки, а плагин сам рисует карточку на вкладке «Интеграции», проверяет и сохраняет значения, вызывает обработчик и записывает результат.', 'contact-form-submissions' ); ?>
+		</p>
+		<ul class="cfs-help-list">
+			<li><?php esc_html_e( 'Интеграции выполняются после того, как заявка записана: сбой внешней системы не стоит сайту заявки.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Неудачная попытка повторяется через 1, 5 и 30 минут.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Что произошло, видно в журнале действий — панель в карточке заявки.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Настройка типа «карта полей» даёт таблицу «поле формы → поле внешней системы».', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<p class="description">
+			<?php esc_html_e( 'Своя интеграция регистрируется фильтром cfs_integrations — править ядро плагина для этого не нужно.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
 
-			<h2><?php esc_html_e( 'Хуки для разработчиков', 'contact-form-submissions' ); ?></h2>
-			<pre class="cfs-help-code">// Приём заявки.
-apply_filters( 'cfs_before_save',      $data, $form_id )
-do_action(    'cfs_after_save',        $submission_id, $data )
-apply_filters( 'cfs_validate_field',   $error, $name, $value, $form_id )
-apply_filters( 'cfs_spam_check',       $is_spam, $data, $form_id )
-apply_filters( 'cfs_rate_limit',       $is_limited, $ip, $form_id )
-apply_filters( 'cfs_success_response', $response, $data )
+	/**
+	 * Help: the submissions list, the export and the checks on the way in.
+	 */
+	private function help_submissions(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'Заявки лежат в разделе «Все заявки»: фильтры по форме и статусу — новая, обработана, спам, — массовые действия и выгрузка CSV. Карточка заявки показывает поля формы, технические данные и журнал действий, причём схема хранится в самой заявке: карточка читается и после того, как форму переименовали или удалили.', 'contact-form-submissions' ); ?>
+		</p>
+		<p>
+			<?php esc_html_e( 'CSV — UTF-8 с BOM, колонки собираются из самих заявок: с фильтром по форме это её поля в порядке шаблона, без фильтра — объединение полей всех выгружаемых заявок. Значения, начинающиеся со знака равенства или плюса, экранируются: иначе Excel исполнит их как формулу.', 'contact-form-submissions' ); ?>
+		</p>
+
+		<h3><?php esc_html_e( 'Что проверяется на приёме', 'contact-form-submissions' ); ?></h3>
+		<ul class="cfs-help-list">
+			<li><?php esc_html_e( 'Одноразовый ключ формы и два скрытых поля-ловушки, которые заполняют только роботы.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Время заполнения: быстрее трёх секунд — отказ.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Частота: не больше 5 заявок в минуту и 20 в час с одного адреса.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Проверка по схеме формы: типы, обязательность, длины и границы, значения списков. Поля, которого нет в форме, не существует — оно просто игнорируется.', 'contact-form-submissions' ); ?></li>
+			<li><?php esc_html_e( 'Стоп-слова из «Настроек» — регистр и раскладка значения не имеют.', 'contact-form-submissions' ); ?></li>
+		</ul>
+		<p class="description">
+			<?php esc_html_e( 'В «Настройках» также хранятся адреса для копий писем, тема письма по умолчанию, сохранение IP и User Agent, максимальная длина комментария и режим отладки.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: what HTML is allowed around the fields.
+	 */
+	private function help_html(): void {
+		?>
+		<p>
+			<?php esc_html_e( 'Вокруг полей пишется обычная разметка: заголовки, абзацы, списки, таблицы, ссылки, картинки. Она сохраняется как есть и выводится без изменений.', 'contact-form-submissions' ); ?>
+		</p>
+		<p>
+			<?php esc_html_e( 'Вырезаются script, style, iframe, form, input, select, textarea, button и любые обработчики событий. Поле, вставленное руками в обход шаблона, всё равно не было бы принято: на приёме значения сверяются со схемой формы.', 'contact-form-submissions' ); ?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'История шаблона хранит десять последних версий — вкладка «Форма», кнопка «История». Форму целиком можно выгрузить в JSON и загрузить на другом сайте вместе с письмами, настройками и интеграциями.', 'contact-form-submissions' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Help: the hook reference.
+	 */
+	private function help_hooks(): void {
+		?>
+		<pre class="cfs-help-code">// Приём заявки.
+apply_filters( 'cfs_before_save',           $data, $form_id )
+do_action(     'cfs_after_save',            $submission_id, $data )
+apply_filters( 'cfs_validate_field',        $error, $name, $value, $form_id )
+apply_filters( 'cfs_spam_check',            $is_spam, $data, $form_id )
+apply_filters( 'cfs_rate_limit',            $is_limited, $ip, $form_id )
+apply_filters( 'cfs_success_response',      $response, $data )
+apply_filters( 'cfs_trusted_ip_headers',    $headers )
+apply_filters( 'cfs_allowed_referer_hosts', $hosts, $referer_host )
 
 // Форма.
-apply_filters( 'cfs_field_types',      $types )
-apply_filters( 'cfs_icon_library',     $icons )
-apply_filters( 'cfs_compiled_schema',  $schema, $template )
+apply_filters( 'cfs_field_types',           $types )
+apply_filters( 'cfs_icon_library',          $icons )
+apply_filters( 'cfs_compiled_schema',       $schema, $template )
 apply_filters( 'cfs_template_allowed_html', $tags )
-apply_filters( 'cfs_render_field',     $html, $field, $renderer )
-apply_filters( 'cfs_form_html',        $html, $form_id, $form, $instance )
+apply_filters( 'cfs_render_field',          $html, $field, $renderer )
+apply_filters( 'cfs_form_html',             $html, $form_id, $form, $instance )
+do_action(     'cfs_form_saved',            $form )
 
 // Письма и действия.
-apply_filters( 'cfs_mail_context',     $context, $data, $form )
-apply_filters( 'cfs_email_recipients', $recipients, $data, $slot )
-apply_filters( 'cfs_email_headers',    $headers, $data )
-apply_filters( 'cfs_email_body',       $body, $data )
-apply_filters( 'cfs_integrations',     $items )
-apply_filters( 'cfs_action_response',  $overrides, $form, $data, $submission_id )
+apply_filters( 'cfs_mail_context',          $context, $data, $form )
+apply_filters( 'cfs_email_recipients',      $recipients, $data, $slot )
+apply_filters( 'cfs_email_headers',         $headers, $data )
+apply_filters( 'cfs_email_body',            $body, $data )
+apply_filters( 'cfs_integrations',          $items )
+apply_filters( 'cfs_action_response',       $overrides, $form, $data, $submission_id )
 
-// Админка (для дополнений).
-apply_filters( 'cfs_submission_panels',  $panels, $submission )
-apply_filters( 'cfs_submission_notices', $notices )
-apply_filters( 'cfs_manage_capability',  $capability )</pre>
-		</div>
-		<style>
-			.cfs-help-code{background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px;overflow-x:auto;}
-			.cfs-help-list li{margin-bottom:4px;}
-			.cfs-help-table{margin-bottom:8px;}
-		</style>
+// Админка и права.
+apply_filters( 'cfs_submission_panels',     $panels, $submission )
+apply_filters( 'cfs_submission_notices',    $notices )
+apply_filters( 'cfs_manage_capability',     $capability )</pre>
 		<?php
 	}
 

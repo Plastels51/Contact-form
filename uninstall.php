@@ -48,6 +48,7 @@ $cfs_options = array(
 	'cfs_save_ip',
 	'cfs_save_ua',
 	'cfs_style_theme',
+	'cfs_icon_dir',
 	'cfs_disable_styles',
 	'cfs_disable_btn_styles',
 	'cfs_debug_mode',
@@ -60,6 +61,7 @@ foreach ( $cfs_options as $cfs_option ) {
 }
 
 delete_transient( 'cfs_new_count' );
+delete_transient( 'cfs_icon_dir_cache' );
 
 // Deferred actions that never got to run.
 wp_clear_scheduled_hook( 'cfs_run_deferred_action' );

@@ -98,7 +98,7 @@
    Resting (placeholder-like position):
      top ≈ 0.85rem — vertically centred within the input
    ───────────────────────────────────────────────────────────── */
-.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
+.cfs-field:where(:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit))>label {
 	position: absolute;
 
 	/* Resting: visually inside the input, like a placeholder. */
@@ -108,17 +108,20 @@
 	font-size: 1em;
 	font-weight: 400;
 	line-height: 1;
-	color: var(--cfs-text, #222);
+
+	/*
+	 * Label ink, not text ink: at rest the label sits exactly where the typed
+	 * text will appear, so the two have to be told apart. --cfs-label sets
+	 * every label in every field style; without it each style keeps the
+	 * colour it had before the variable existed.
+	 */
+	color: var(--cfs-label, var(--cfs-text, #222));
 
 	pointer-events: none;
 	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	max-width: calc(100% - 1.5rem);
 
 	/* No background at rest — transparent so input shows through. */
 	background-color: transparent;
-	padding: 0;
 
 	z-index: 2;
 
@@ -134,12 +137,30 @@
 }
 
 /* Required asterisk inherits the label's color (gray at rest, blue/red when floated). */
-.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label .cfs-required {
+.cfs-field:where(:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit))>label .cfs-required {
 	color: inherit;
 }
 
+/* ── Floated state: focused OR has a value (class "focused" is JS-managed) ── */
+.cfs-field.focused:where(:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit))>label {
+	/* Center on the input top border: 0 − 0.375rem = −0.375rem. */
+	top: -0.375rem;
+	left: calc(0.75rem - 0.2rem);
+	/* compensate for the added padding */
+
+	font-size: 0.75em;
+	font-weight: 600;
+
+	/* The raised label has its own ink too — it is not always the accent. */
+	color: var(--cfs-label-active, var(--cfs-accent, #0073aa));
+
+	/* Strip in the form background colour cuts through the input border line. */
+	background-color: var(--cfs-bg, #fff);
+	padding: 0 0.2rem;
+}
+
 /* Error colour on the floated label. */
-.cfs-field.focused.cfs-field--has-error:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
+.cfs-field.focused.cfs-field--has-error:where(:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit))>label {
 	color: var(--cfs-error-dark, #c0392b);
 }
 
@@ -147,7 +168,7 @@
  * Hide the native placeholder: the floating label replaces it.
  * We only need the placeholder attribute for the phone field focus-seed via JS.
  */
-.cfs-field:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>.cfs-input::placeholder {
+.cfs-field:where(:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit))>.cfs-input::placeholder {
 	color: transparent;
 	transition: color 0.1s;
 }
@@ -243,6 +264,8 @@
 	border-radius: var(--cfs-radius, 4px);
 	font-size: 1em;
 	line-height: 1.4;
+
+	/* The text the visitor types. Labels take --cfs-label instead. */
 	color: var(--cfs-text, #222);
 	background-color: var(--cfs-bg, #fff);
 	box-sizing: border-box;
@@ -451,10 +474,24 @@ dialog.cfs-form-wrap--dialog {
 	max-width: min(560px, 90vw);
 	width: 100%;
 	max-height: 90vh;
-	overflow-x: clip;
-	overflow-y: auto;
 
-	/* Appearance. */
+	/*
+	 * The dialog does not scroll: .cfs-form-body inside it does. The close
+	 * button and the result banner are positioned against this element, so
+	 * while the scrolling happened here they travelled with the content — on a
+	 * long form the ✕ left the screen exactly when a visitor wanted out.
+	 * A clipped column flexbox keeps them and hands the scrolling to the form.
+	 *
+	 * ⚠️ The display declaration lives in the [open] rule below and must stay
+	 * there. The browser hides a closed <dialog> with `display: none` from its
+	 * own stylesheet, and any author `display` on the element itself beats it:
+	 * written here, this one left every closed modal form painted on the page,
+	 * outside the top layer and therefore with no ::backdrop of its own.
+	 */
+	overflow: hidden;
+
+	/* Appearance. The padding is now a fixed frame rather than part of the
+	   scrolling content, so the form is clipped at its inner edge. */
 	padding: 2rem 2rem 2.5rem;
 	border: none;
 	border-radius: var(--cfs-container-radius, 8px);
@@ -463,16 +500,41 @@ dialog.cfs-form-wrap--dialog {
 	background: var(--cfs-bg, #fff);
 }
 
+/* Only an open dialog gets a box — see the warning above. */
+dialog.cfs-form-wrap--dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
 dialog.cfs-form-wrap--dialog::backdrop {
 	background: rgba(0, 0, 0, 0.55);
 }
 
+/* The form's own box. Outside a modal it only groups the <form>; inside one it
+   is the scrollport, and min-height: 0 is what lets it shrink below its content
+   in the column flexbox — without it a long form stretches the dialog past
+   max-height and no scrollbar ever appears. */
+dialog.cfs-form-wrap--dialog > .cfs-form-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: clip;
+	overflow-y: auto;
+
+	/* Stop the scroll from chaining to the page once the form hits its end:
+	   the point of a modal is that the page behind it stays where it was. */
+	overscroll-behavior: contain;
+}
+
 /* Close (x) button position — layout only, visuals live in cfs-buttons.css
-   so they are disabled together with the rest of the button styling. */
+   so they are disabled together with the rest of the button styling.
+
+   Positioned against the dialog, which no longer scrolls, so the corner it is
+   put in is the corner it keeps. */
 .cfs-modal-close {
 	position: absolute;
 	top: 0.625rem;
 	right: 0.625rem;
+	z-index: 4;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -482,18 +544,18 @@ dialog.cfs-form-wrap--dialog::backdrop {
    <select> inside .cfs-field. Styled via parent selector — no
    wrapper span needed. Uses `fill` for SVG colouring.
 
-   Geometry (no shelf):
-     Icon center = border (1px) + input-padding-top (0.625rem)
-                   + half line-height (~0.7rem) ≈ 1.325rem
-   Select uses top: 50% instead.
+   Geometry: the icon is pinned to the first line of text, not
+   centred on the control. One `top` then serves every field type —
+   input, select and textarea start their text at the same offset —
+   and a textarea that grows keeps its icon beside the first line
+   instead of drifting towards the middle of the box.
    ───────────────────────────────────────────────────────────── */
 
 /* Icon SVG — positioned inside .cfs-field (position:relative). */
 .cfs-field--has-icon>svg {
 	position: absolute;
 	left: 0.75rem;
-	top: 1.325rem;
-	transform: translateY(-50%);
+	top: 1rem;
 
 	width: 1.1rem;
 	height: 1.1rem;
@@ -501,17 +563,6 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	pointer-events: none;
 	z-index: 3;
 	transition: fill 0.3s ease-out;
-}
-
-/* Select: centre icon vertically. */
-.cfs-field--select.cfs-field--has-icon>svg {
-	top: 50%;
-}
-
-/* Textarea (comment): align icon with the top of the text area content. */
-.cfs-field--comment.cfs-field--has-icon>svg {
-	top: 0.75rem;
-	transform: translateY(0);
 }
 
 /* Input/textarea/select gets extra left padding to not overlap the icon. */
@@ -524,9 +575,8 @@ dialog.cfs-form-wrap--dialog::backdrop {
  * When icon is present the label starts to the RIGHT of the icon so it
  * acts as a placeholder aligned with the text inside the input.
  */
-.cfs-field--has-icon:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.focused)>label {
+.cfs-field--has-icon:where(:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit):not(.focused))>label {
 	left: 2.5rem;
-	max-width: calc(100% - 3rem);
 }
 
 /*
@@ -534,9 +584,8 @@ dialog.cfs-form-wrap--dialog::backdrop {
  * The label escapes the input and floats above the border, so it goes back
  * to the original horizontal position regardless of icon.
  */
-.cfs-field--has-icon.focused:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit)>label {
+.cfs-field--has-icon.focused:where(:not(.cfs-field--checkbox):not(.cfs-field--select):not(.cfs-field--submit))>label {
 	left: calc(0.75rem - 0.2rem);
-	max-width: calc(100% - 1.5rem);
 }
 
 /* Icon turns error colour when the field is invalid. */
@@ -665,14 +714,14 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	flex-direction: column;
 	align-items: center;
 	gap: 0.5rem;
-	color: var(--cfs-label, #999);
+	color: var(--cfs-stepper-text, #999);
 	font-size: 0.85em;
-	line-height: 1.25;
+	line-height: 1;
 	text-align: center;
 }
 
 /* Connector line between items — drawn on every item except the last. */
-.cfs-stepper-item:not(:last-child)::after {
+.cfs-stepper-item:where(:not(:last-child))::after {
 	content: '';
 	position: absolute;
 	top: 0.9rem;
@@ -683,7 +732,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	transition: background-color 0.25s ease-out;
 }
 
-.cfs-stepper-item.is-complete:not(:last-child)::after {
+.cfs-stepper-item.is-complete:where(:not(:last-child))::after {
 	background: var(--cfs-accent, #0073aa);
 }
 
@@ -693,7 +742,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	height: 2rem;
 	border-radius: 50%;
 	background: var(--cfs-stepper-bg, #eaeaea);
-	color: var(--cfs-label, #999);
+	color: var(--cfs-stepper-text, #999);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -753,7 +802,7 @@ dialog.cfs-form-wrap--dialog::backdrop {
 	padding: 0 1.25rem;
 }
 
-.cfs-stepper--compact .cfs-stepper-item:not(:last-child)::after {
+.cfs-stepper--compact .cfs-stepper-item:where(:not(:last-child))::after {
 	left: calc(50% + 1.25rem);
 	right: calc(-50% + 1.25rem);
 }
