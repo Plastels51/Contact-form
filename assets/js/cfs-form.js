@@ -420,13 +420,41 @@
 			input.setSelectionRange(cursorPos, cursorPos);
 		});
 
-		/* ── PASTE: format the pasted text and move cursor to end ── */
+		/*
+		 * ── PASTE: format what was pasted, but let the paste itself through ──
+		 *
+		 * Cancelling the event here broke the native paste: password managers and
+		 * autofill stop seeing it, and Lighthouse's "Prevents users from pasting
+		 * into input fields" audit dispatches a synthetic paste event on the input
+		 * and reads a cancelled event as blocking. The browser now does the paste,
+		 * and we replace the value with the formatted number right after.
+		 */
 		input.addEventListener('paste', function (e) {
-			e.preventDefault();
-			var pasted    = (e.clipboardData || window.clipboardData).getData('text');
-			var formatted = formatPhoneValue(pasted);
-			input.value   = formatted;
-			input.setSelectionRange(formatted.length, formatted.length);
+			// Synthetic events (Lighthouse, autofill) arrive without clipboard data.
+			if (!e.clipboardData) {
+				return;
+			}
+
+			var pasted = e.clipboardData.getData('text');
+
+			if (!pasted) {
+				return;
+			}
+
+			// The browser pastes the text itself; skip the 'input' reformat below
+			// so that the "+7 (" prefix does not get doubled.
+			skipNextInput = true;
+
+			setTimeout(function () {
+				// The browser's 'input' for the paste has fired by now. Clear the
+				// flag anyway: a paste that changed nothing sends no 'input', and
+				// the next keystroke must not be skipped.
+				skipNextInput = false;
+
+				var formatted = formatPhoneValue(pasted);
+				input.value   = formatted;
+				input.setSelectionRange(formatted.length, formatted.length);
+			}, 0);
 		});
 
 		/* ── FOCUS: seed '+7 (' so the user sees the mask immediately ── */
