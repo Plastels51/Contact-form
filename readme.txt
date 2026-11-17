@@ -4,7 +4,7 @@ Tags: contact form, form builder, submissions, shortcode, crm
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.2
-Stable tag: 4.5.2
+Stable tag: 4.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -115,6 +115,8 @@ in the very place that text will appear, so the two are separate colours.
 `--cfs-hint`, `--cfs-legend`, `--cfs-text-muted`, `--cfs-stepper-text`, `--cfs-error-dark`
 for the rest of the text, and `--cfs-accent`, `--cfs-bg`, `--cfs-border`, `--cfs-radius`,
 `--cfs-btn-*` for everything that is not text. Set none of them and the look is unchanged.
+`--cfs-focus-width` (default `2px`) is how thick the underline grows on focus in the
+underline style.
 
 == Developer hooks ==
 
@@ -134,6 +136,21 @@ An integration describes itself once and the plugin draws its settings card, sto
 values, runs it after the submission is saved, retries on failure and logs the result.
 
 == Changelog ==
+
+= 4.5.3 =
+
+**Focus in the underline skin is one line, the same however the field was reached.** The
+skin drew focus with two rules: `:focus` thickened the border to 2px, and `:focus-visible`
+hung a 2px shadow under it. Browsers count focus on a text field as visible even after a
+mouse click, so text fields always got both — a 4px line — while a select clicked with the
+mouse matched `:focus` alone and got half of it. Both are now one `:focus` rule.
+
+The border also no longer grows on focus. Its width counts towards the field's height, so
+thickening it nudged everything below the field down by a pixel. The border stays at 1px
+and changes colour; the extra thickness is a shadow, which takes no room. How thick the
+line gets is the new `--cfs-focus-width` custom property, 2px by default counting the
+border.
+
 
 = 4.5.2 =
 

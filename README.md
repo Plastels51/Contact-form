@@ -282,6 +282,11 @@ where the text will appear, and one colour for both leaves no way to tell an emp
 from a filled one at a glance. Set neither variable and nothing changes — `--cfs-label`
 falls back to whatever each field style used before it existed.
 
+One variable is not a colour: `--cfs-focus-width` sets how thick the underline grows
+when a field in the underline style takes focus — `2px` by default, counting the 1px
+border. The extra thickness is a shadow hanging below the field, so focus never
+changes its height.
+
 ---
 
 ## For developers
