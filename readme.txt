@@ -4,7 +4,7 @@ Tags: contact form, form builder, submissions, shortcode, crm
 Requires at least: 5.0
 Tested up to: 6.5
 Requires PHP: 7.2
-Stable tag: 4.5.3
+Stable tag: 4.5.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -136,6 +136,14 @@ An integration describes itself once and the plugin draws its settings card, sto
 values, runs it after the submission is saved, retries on failure and logs the result.
 
 == Changelog ==
+
+= 4.5.4 =
+
+**Pasting a phone number keeps the native paste.** The mask used to cancel the `paste` event
+and write the formatted value itself, which hid the paste from password managers and autofill
+and made Lighthouse's "Prevents users from pasting into input fields" audit fail on the phone
+field. The browser now performs the paste, and the mask reformats the value immediately after
+it; a synthetic event that carries no clipboard data is ignored instead of throwing.
 
 = 4.5.3 =
 

@@ -3,7 +3,7 @@
  * Plugin Name: Contact Form Submissions
  * Plugin URI:  https://github.com/Plastels51/Contact-form#readme
  * Description: Flexible contact forms via shortcode.
- * Version:     4.5.3
+ * Version:     4.5.4
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * Author:      Plastels51
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Plugin constants.
-define( 'CFS_VERSION', '4.5.3' );
+define( 'CFS_VERSION', '4.5.4' );
 define( 'CFS_PLUGIN_FILE', __FILE__ );
 define( 'CFS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'CFS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
